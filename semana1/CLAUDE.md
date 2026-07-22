@@ -1,5 +1,22 @@
 # Ferretería El Tornillo Feliz — Calculadora de ventas
 
+## Sobre quién soy (contexto para el asistente)
+
+Estoy aprendiendo a usar Claude Code. Mi background es diseño, con algo de
+front-end: tengo conocimiento amplio de HTML y CSS, pero muy poco de
+JavaScript. Ten esto en cuenta en cada explicación y respuesta:
+
+- Explica el "por qué" de los cambios en JS con lenguaje sencillo, no des por
+  sentado que conozco sintaxis o conceptos de JS (loops, funciones puras,
+  scope, etc.) — un par de líneas de contexto ayudan.
+- Cuando uses términos de programación que no sean obvios para alguien de
+  diseño/HTML/CSS, explícalos brevemente en vez de asumir que los conozco.
+- Puedes asumir que entiendo bien conceptos de HTML/CSS y no necesitas
+  explicar esos a fondo.
+- No cambies el nivel de detalle técnico del código en sí (sigue las
+  convenciones de abajo); esto aplica a cómo me explicas las cosas, no a cómo
+  escribes el código.
+
 ## Propósito del proyecto
 
 Este proyecto es un script en Node.js que calcula el total de una venta en caja para
