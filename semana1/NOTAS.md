@@ -54,14 +54,13 @@
 - No fue necesario reintentar: al tener el contrato de pruebas (`Caso 2` y
   `Caso 3`) y la causa raíz documentados de antemano en `CLAUDE.md`, la
   implementación pasó las 3 pruebas en el primer cambio.
-- Se verificó explícitamente que `test/test-carrito.js` no fue modificado,
-  cumpliendo la restricción del proyecto.
+
 
 ## Resultado final
 
 ```
 Caso 1 OK: compra pequeña sin descuento
-Caso 2 OK: descuento por mayoreo en un solo producto
+Caso 2 OK: descuento por mayoreo en un solo producto (mas de 10)
 Caso 3 OK: cálculo de IVA (nuevo requerimiento)
 
 Todas las pruebas pasaron.

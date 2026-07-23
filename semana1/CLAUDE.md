@@ -3,7 +3,7 @@
 ## Sobre quién soy (contexto para el asistente)
 
 Estoy aprendiendo a usar Claude Code. Mi background es diseño, con algo de
-front-end: tengo conocimiento amplio de HTML y CSS, pero muy poco de
+front-end: tengo conocimiento amplio de HTML y CSS, pero  poco de
 JavaScript. Ten esto en cuenta en cada explicación y respuesta:
 
 - Explica el "por qué" de los cambios en JS con lenguaje sencillo, no des por
@@ -12,7 +12,7 @@ JavaScript. Ten esto en cuenta en cada explicación y respuesta:
 - Cuando uses términos de programación que no sean obvios para alguien de
   diseño/HTML/CSS, explícalos brevemente en vez de asumir que los conozco.
 - Puedes asumir que entiendo bien conceptos de HTML/CSS y no necesitas
-  explicar esos a fondo.
+  explicar esos.
 - No cambies el nivel de detalle técnico del código en sí (sigue las
   convenciones de abajo); esto aplica a cómo me explicas las cosas, no a cómo
   escribes el código.
@@ -22,22 +22,22 @@ JavaScript. Ten esto en cuenta en cada explicación y respuesta:
 Este proyecto es un script en Node.js que calcula el total de una venta en caja para
 la Ferretería El Tornillo Feliz. Su alcance es intencionalmente pequeño: una sola
 función (`calcularTotal`) que recibe un carrito de compras y devuelve subtotal,
-descuento e IVA. No es una aplicación web, no tiene base de datos ni interfaz gráfica;
+descuento e IVA 13%. No es una aplicación web, no tiene base de datos ni interfaz gráfica;
 es la lógica de cálculo que usaría una caja registradora simple.
 
 El propósito de esta sesión de trabajo con Claude Code es:
 
 1. Diagnosticar y corregir el bug de cálculo del descuento por mayoreo.
-2. Implementar el cálculo de IVA (13%) que pidió la dueña del negocio.
+2. Implementar el cálculo de IVA (13%).
 3. Documentar el proceso de colaboración con el asistente (prompts, decisiones,
-   iteraciones) como parte de la entrega del ejercicio.
+   iteraciones) como parte del ejercicio.
 
 ## Contexto del negocio
 
 La Ferretería El Tornillo Feliz es un pequeño negocio familiar que usa un script en
-Node.js para calcular el total de sus ventas en caja. Un desarrollador junior construyó
-la primera versión, pero desde hace unas semanas varios clientes reclaman que el total
-en pantalla "no cuadra" cuando compran grandes cantidades de un mismo producto.
+Node.js para calcular el total de sus ventas en caja. Se construyó
+la primera versión, pero desde hace unas semanas que el total
+en pantalla "no cuadra" cuando compran se grandes cantidades de un mismo producto.
 
 Por separado, la dueña del negocio pidió agregar el cálculo del Impuesto al Valor
 Agregado (IVA, 13%) sobre el monto de la venta, algo que el script todavía no hace.
@@ -48,7 +48,7 @@ Agregado (IVA, 13%) sobre el monto de la venta, algo que el script todavía no h
   `{ nombre, precio, cantidad }` y devuelve `{ subtotal, descuento, total }`.
 - `test/test-carrito.js` — pruebas manuales con `node:assert`, ejecutadas con
   `npm test`. Incluye 3 casos: compra pequeña sin descuento, compra al por mayor de
-  un solo producto, y el caso nuevo de IVA (actualmente fallando a propósito).
+  un solo producto, y el caso nuevo de IVA.
 - No hay build ni framework de testing externo: es Node.js puro.
 
 ## Cómo correr las pruebas
@@ -62,7 +62,7 @@ el punto de partida esperado.
 
 ## El bug de descuento por mayoreo
 
-**Síntoma:** clientes que compran muchas unidades de un mismo producto no reciben el
+**Problema** clientes que compran muchas unidades de un mismo producto no reciben el
 10% de descuento por mayoreo esperado.
 
 **Causa raíz:** en `calcularTotal`, la condición `carrito.length > 10` cuenta cuántas
