@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { buildGraph, computeNodeStatus } from './graph'
+import {
+  buildGraph,
+  computeNodeStatus,
+  isNodeWeakened,
+  weakenedPrereqs,
+} from './graph'
 import { DAY_MS } from './srs'
 import type { SkillNode, UserItemState } from './types'
 
@@ -64,5 +69,75 @@ describe('reporte de usuario: el mapa no se da cuenta de que pasó el tiempo', (
     // refrescar el prerequisito — no que siga disponible como si nada.
     const afterAMonth = computeNodeStatus(graph, child, states, T0 + ONE_MONTH_MS)
     expect(afterAMonth).toBe('locked')
+  })
+})
+
+/**
+ * `isNodeWeakened` y `weakenedPrereqs` implementan la otra mitad de "lo que
+ * se oxidó vuelve a pedir trabajo": «Al abrir un nodo bloqueado, el mapa
+ * indica qué prerequisitos hay que volver a practicar». Ninguna de las 105
+ * pruebas originales ejercitaba estas dos funciones — quedaron sin cobertura
+ * desde antes del bug que se corrigió. Como dependen de `isNodeMastered`,
+ * conviene volver a recorrerlas ahora que esa corrección ya está aplicada.
+ */
+describe('cobertura faltante: aviso de prerequisito oxidado', () => {
+  it('un nodo recién dominado, sin vencer, no se considera oxidado', () => {
+    const node = mkNode('A', [], ['a1'])
+    const states = new Map([['a1', mkJustMasteredButDueState('a1')]])
+    expect(isNodeWeakened(node, states, T0)).toBe(false)
+  })
+
+  it('un nodo que ganó su dominio pero luego se dejó vencer se marca oxidado', () => {
+    const node = mkNode('A', [], ['a1'])
+    const states = new Map([['a1', mkJustMasteredButDueState('a1')]])
+    expect(isNodeWeakened(node, states, T0 + ONE_MONTH_MS)).toBe(true)
+  })
+
+  it('al abrir un nodo bloqueado, señala cuál de sus prerequisitos hay que repasar', () => {
+    const parent = mkNode('A', [], ['a1'])
+    const child = mkNode('B', ['A'], ['b1'])
+    const graph = buildGraph([parent, child])
+    const states = new Map([['a1', mkJustMasteredButDueState('a1')]])
+
+    expect(weakenedPrereqs(graph, 'B', states, T0)).toEqual([])
+    expect(weakenedPrereqs(graph, 'B', states, T0 + ONE_MONTH_MS)).toEqual([parent])
+  })
+
+  it('con dos prerequisitos oxidados, el aviso muestra solo uno (límite de espacio del panel, documentado en el código)', () => {
+    const parentA = mkNode('A', [], ['a1'])
+    const parentC = mkNode('C', [], ['c1'])
+    const child = mkNode('D', ['A', 'C'], ['d1'])
+    const graph = buildGraph([parentA, parentC, child])
+    const states = new Map([
+      ['a1', mkJustMasteredButDueState('a1')],
+      ['c1', mkJustMasteredButDueState('c1')],
+    ])
+
+    const warned = weakenedPrereqs(graph, 'D', states, T0 + ONE_MONTH_MS)
+    expect(warned).toHaveLength(1)
+  })
+})
+
+describe('cobertura faltante: mantenimiento también se oxida con el tiempo', () => {
+  it('un nodo en mantenimiento deja de contar como dominado si se abandona lo suficiente', () => {
+    const node = mkNode('A', [], ['a1'])
+    const graph = buildGraph([node])
+    const longInterval = 30
+    const state: UserItemState = {
+      itemId: 'a1',
+      easiness: 2.5,
+      interval: longInterval,
+      repetitions: 5,
+      mastery: 80,
+      bestBpm: null,
+      dueDate: T0,
+      lastReviewed: T0 - longInterval * DAY_MS,
+    }
+    const states = new Map([['a1', state]])
+
+    expect(computeNodeStatus(graph, node, states, T0)).toBe('maintenance')
+    expect(computeNodeStatus(graph, node, states, T0 + ONE_MONTH_MS)).not.toBe(
+      'maintenance',
+    )
   })
 })
