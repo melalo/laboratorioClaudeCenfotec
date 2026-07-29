@@ -1,0 +1,37 @@
+# Dependencias
+node_modules
+
+# Build
+dist
+dist-ssr
+*.local
+
+# Vite PWA (generado por vite-plugin-pwa)
+dev-dist
+
+# Testing / cobertura
+coverage
+
+# Variables de entorno
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor / IDE
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.suo
+*.sw?
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
