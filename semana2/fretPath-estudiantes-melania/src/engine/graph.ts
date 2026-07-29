@@ -20,7 +20,7 @@ import type {
   UserNodeState,
   NodeStatus,
 } from './types'
-import { currentMastery, ITEM_MASTERY_TARGET } from './srs'
+import { currentMastery, DAY_MS, ITEM_MASTERY_TARGET } from './srs'
 
 /** A mastered node whose every item interval is ≥ this many days is in the
  * lighter "maintenance" rotation. */
@@ -288,4 +288,49 @@ export function unlocksAfter(
       ),
     )
     .filter((dep) => !isNodeMastered(dep, itemStates, now))
+}
+
+/**
+ * "Lo que nunca se llegó a construir": el aviso anticipado de oxidación.
+ * Dado el estado en `now`, indica qué nodos *hoy dominados* van a dejar de
+ * estarlo dentro de los próximos `horizonDays` días si el usuario no
+ * practica nada en ese lapso.
+ *
+ * Decisiones de borde (no las resuelve la firma; fijadas en
+ * nodes-at-risk.test.ts):
+ *
+ * 1. Alcanza con que UN ítem del nodo esté por caer. Igual que
+ *    `isNodeMastered` exige que TODOS los ítems estén sobre el umbral para
+ *    considerar el nodo dominado, alcanza con que uno solo baje para que
+ *    deje de estarlo — el mismo criterio, proyectado hacia adelante.
+ * 2. Los ítems nunca practicados no cuentan. No hace falta un caso especial:
+ *    un nodo con un ítem sin practicar no está dominado *hoy*, así que ya
+ *    queda afuera por el punto 3.
+ * 3. Los nodos que ya cayeron (no dominados en `now`) quedan afuera: "va a
+ *    caer" implica que hoy está arriba. Por eso el filtro exige
+ *    `isNodeMastered(node, itemStates, now)` como condición de entrada.
+ * 4. Mantenimiento recibe el mismo trato que cualquier nodo dominado: para
+ *    `isNodeMastered`, `maintenance` ya es un caso de nodo dominado, así que
+ *    queda incluido por el mismo filtro del punto 3, sin caso especial.
+ * 5. Un nodo sin ítems nunca es dominado (`isNodeMastered` ya lo resuelve),
+ *    así que tampoco puede estar "en riesgo" — mismo filtro del punto 3.
+ * 6. El borde del horizonte es inclusivo: un ítem que cruza el umbral
+ *    exactamente el día `horizonDays` cuenta como dentro de la ventana
+ *    (más vale avisar de más que dejar pasar un caso límite sin aviso).
+ */
+export function nodesAtRisk(
+  graph: SkillGraph,
+  itemStates: Map<string, UserItemState>,
+  now: number,
+  horizonDays: number,
+): SkillNode[] {
+  const horizonEnd = now + horizonDays * DAY_MS
+  return graph.nodes.filter((node) => {
+    if (!isNodeMastered(node, itemStates, now)) return false
+    return node.items.some((itemId) => {
+      const state = itemStates.get(itemId)!
+      if (state.dueDate === null || horizonEnd <= state.dueDate) return false
+      return currentMastery(state, horizonEnd) <= ITEM_MASTERY_TARGET
+    })
+  })
 }
