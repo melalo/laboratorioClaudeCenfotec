@@ -36,6 +36,7 @@ El código vive en `fretPath-estudiantes-melania/` (dentro de esta misma carpeta
 - `isNodeWeakened` y `weakenedPrereqs` (el aviso de "qué prerequisito hay que repasar") no tenían ninguna prueba desde antes del bug; se les agregó cobertura y funcionan bien con la misma corrección.
 - `nodesAtRisk` implementado con las 6 decisiones de borde documentadas en el propio código (`graph.ts`) y fijadas en pruebas.
 - Suite final: 118/118 pruebas en verde (105 originales sin tocar + 13 nuevas), `tsc --noEmit` sin errores.
+- Reto adicional resuelto (`regression-minimal.test.ts`): la prueba mínima que habría atrapado el bug original es una sola, que le pregunta a `isNodeMastered` por el mismo ítem en dos momentos ("ahora" = al vencer, y "ahora" = un mes después). Ninguna de las 105 pruebas originales le pasaba a `isNodeMastered`/`computeNodeStatus` un `now` posterior al `dueDate` de sus datos de prueba — a diferencia de `srs.test.ts`, que sí probaba la aritmética de decaimiento (`currentMastery`) con el tiempo avanzado. La suite probó bien la fórmula por separado, pero nunca la integración: que esa fórmula realmente se usara con el tiempo real al derivar el estatus de un nodo.
 
 ## Sobre quién trabaja en este proyecto
 
