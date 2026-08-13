@@ -42,10 +42,16 @@ comprobación se corrió y el resultado quedó anotado como evidencia en `PLAN.m
 
 1. `PROMPT.md` — encargo inicial del Caso práctico 3.
 2. `ESPECIFICACION.md` y `DISENO.md` — actualizados donde la construcción los corrigió.
-3. `PLAN.md` — el plan completo, con la evidencia anotada en los vertical slices cerrados.
-4. **Código** — los vertical slices cerrados del prototipo, al menos tres, en el orden del plan.
-5. `README.md` — cómo poner a correr la aplicación, cómo recrear los datos de prueba, y la lista
+3. `VISUALS.md` — el sistema de diseño visual (paleta, tipografías, espaciado, formas y
+   componentes) que rige todas las pantallas. Lo aportó la estudiante durante la construcción;
+   manda sobre el aspecto, y `DISENO.md` lo referencia en las decisiones que le corresponden.
+4. `PLAN.md` — el plan completo, con la evidencia anotada en los vertical slices cerrados.
+5. **Código** — los vertical slices cerrados del prototipo, al menos tres, en el orden del plan.
+6. `README.md` — cómo poner a correr la aplicación, cómo recrear los datos de prueba, y la lista
    de dependencias adoptadas, cada una con el enlace a su repositorio oficial.
+7. `BITACORA.md` — registro fechado de las decisiones, las correcciones de rumbo y las entradas
+   de gobernanza de cada sesión de construcción. **La consigna no lo pide**; se lleva igual, como
+   en el proyecto final, porque es lo que permite defender por qué el prototipo quedó así.
 
 El commit que agrega `PLAN.md` precede a los commits de construcción (ya cumplido: commit
 `1ac7c79`).

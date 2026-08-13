@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 600" width="400" height="600" role="img" aria-label="Afiche de Camino al faro">
+  <defs>
+    <linearGradient id="noche" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#241338"/>
+      <stop offset="60%" stop-color="#3d1f4a"/>
+      <stop offset="100%" stop-color="#0d0714"/>
+    </linearGradient>
+    <linearGradient id="haz" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#f2ca50" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#f2ca50" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="400" height="600" fill="url(#noche)"/>
+  <g fill="#ffe088" opacity="0.7">
+    <circle cx="60" cy="70" r="2"/>
+    <circle cx="130" cy="40" r="1.5"/>
+    <circle cx="330" cy="90" r="2"/>
+    <circle cx="250" cy="55" r="1.5"/>
+    <circle cx="95" cy="150" r="1.5"/>
+    <circle cx="355" cy="180" r="2"/>
+  </g>
+
+  <!-- el haz de luz -->
+  <path d="M232 196 L400 120 L400 280 Z" fill="url(#haz)"/>
+  <path d="M168 196 L0 130 L0 268 Z" fill="url(#haz)" transform="scale(-1,1) translate(-400,0)"/>
+
+  <!-- el faro -->
+  <g>
+    <path d="M176 210 L224 210 L236 430 L164 430 Z" fill="#1a0f26"/>
+    <path d="M176 210 L224 210 L221 250 L179 250 Z" fill="#2a1a3a"/>
+    <path d="M180 290 L220 290 L222 330 L178 330 Z" fill="#2a1a3a"/>
+    <rect x="172" y="182" width="56" height="26" rx="3" fill="#0d0714"/>
+    <circle cx="200" cy="195" r="11" fill="#f2ca50"/>
+    <path d="M186 182 L214 182 L200 162 Z" fill="#0d0714"/>
+  </g>
+  <path d="M120 430 L280 430 L300 470 L100 470 Z" fill="#0d0714"/>
+
+  <text x="200" y="524" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="38" font-weight="700" fill="#e5e2e1" letter-spacing="1">CAMINO</text>
+  <text x="200" y="558" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="24" fill="#d0c5af" letter-spacing="8">AL FARO</text>
+  <rect x="160" y="574" width="80" height="2" fill="#f2ca50"/>
+</svg>

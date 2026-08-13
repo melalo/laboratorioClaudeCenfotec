@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 600" width="400" height="600" role="img" aria-label="Afiche de Ruido blanco">
+  <defs>
+    <linearGradient id="senal" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2b0f3a"/>
+      <stop offset="50%" stop-color="#4a1350"/>
+      <stop offset="100%" stop-color="#100616"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="400" height="600" fill="url(#senal)"/>
+
+  <!-- barras de interferencia -->
+  <g fill="#e5e2e1">
+    <rect x="0" y="150" width="400" height="3" opacity="0.5"/>
+    <rect x="0" y="168" width="240" height="6" opacity="0.28"/>
+    <rect x="160" y="186" width="240" height="4" opacity="0.4"/>
+    <rect x="0" y="206" width="120" height="9" opacity="0.18"/>
+    <rect x="90" y="228" width="310" height="3" opacity="0.45"/>
+    <rect x="0" y="250" width="200" height="5" opacity="0.22"/>
+    <rect x="220" y="270" width="180" height="7" opacity="0.3"/>
+    <rect x="0" y="296" width="400" height="2" opacity="0.55"/>
+    <rect x="40" y="316" width="150" height="6" opacity="0.2"/>
+    <rect x="250" y="336" width="150" height="4" opacity="0.34"/>
+    <rect x="0" y="360" width="280" height="3" opacity="0.4"/>
+    <rect x="120" y="384" width="280" height="8" opacity="0.16"/>
+    <rect x="0" y="410" width="180" height="3" opacity="0.42"/>
+  </g>
+
+  <!-- onda que atraviesa el ruido -->
+  <path d="M0 300 L60 300 L78 240 L96 360 L114 268 L132 332 L150 300 L400 300"
+        fill="none" stroke="#9b59b6" stroke-width="4" stroke-linejoin="round" opacity="0.95"/>
+  <path d="M0 300 L60 300 L78 240 L96 360 L114 268 L132 332 L150 300 L400 300"
+        fill="none" stroke="#f2ca50" stroke-width="1.5" stroke-linejoin="round"/>
+
+  <text x="200" y="500" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="46" font-weight="700" fill="#e5e2e1" letter-spacing="3">RUIDO</text>
+  <text x="200" y="546" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="30" fill="#d0c5af" letter-spacing="12">BLANCO</text>
+  <rect x="160" y="566" width="80" height="2" fill="#f2ca50"/>
+</svg>

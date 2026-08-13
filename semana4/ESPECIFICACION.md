@@ -10,7 +10,8 @@ completo el cuaderno y el mapa de asientos en papel que se usan hoy.
 | Término | Definición |
 |---|---|
 | Función | Una proyección de una película, en una fecha y hora determinadas, en una sala específica. |
-| Cartelera | El conjunto de funciones programadas para la semana vigente. |
+| Afiche | La imagen que representa a una película en la cartelera. Es un dato de la película, no de cada función: todas las funciones de una misma película muestran el mismo afiche. Lo carga el personal de administración. Una película puede no tener afiche todavía. |
+| Cartelera | El conjunto de funciones programadas para la semana vigente. La semana del cine va de **jueves a miércoles**, porque los estrenos entran los jueves. Como consecuencia, toda semana vigente contiene exactamente un miércoles — el día del descuento de RN-2. El cine programa **entre tres y cuatro funciones diarias en cada sala**, y cada sala proyecta una sola película en toda la semana (RN-15): una cartelera típica tiene entonces dos películas y entre 42 y 56 funciones. |
 | Asiento | Un lugar de una sala, identificado por su fila (letra) y su número (columna). |
 | Boleto | El derecho a ocupar un asiento en una función, incluido en una compra. Se descarta "entrada" como sinónimo, aunque la dueña use ambos indistintamente. |
 | Compra | El registro de que uno o más boletos de una función fueron adquiridos, con su estado de pago. |
@@ -36,6 +37,10 @@ completo el cuaderno y el mapa de asientos en papel que se usan hoy.
 - El vale de cambio: su valor, fecha de vencimiento y canje son papel, fuera del sistema.
 - Más de un cine, más de dos salas, o más de una semana de cartelera a la vez.
 - Cuentas de cliente: el cliente no crea cuenta; solo el personal tiene cuenta.
+- Asientos fuera de servicio: **todos** los asientos de una sala están a la venta. El sistema no
+  registra butacas rotas, apartadas, ni reservadas de forma permanente. (Se consideró al construir
+  el vertical slice 1 y se descartó: no lo pide ninguna consigna. Lo que el mapa muestra en gris es
+  un asiento reservado por otro cliente o ya vendido, no uno fuera de servicio.)
 
 ## Reglas del negocio
 1. RN-1: El precio base de un boleto es el mismo para todas las funciones, sin importar la
@@ -66,6 +71,9 @@ completo el cuaderno y el mapa de asientos en papel que se usan hoy.
 14. RN-14: Para comprar, el cliente indica su nombre y su número de identificación (sin crear
     cuenta). Si pierde su código de confirmación, puede recuperarlo en taquilla presentando su
     identificación.
+15. RN-15: Cada sala proyecta **una sola película** durante toda la semana vigente. Como el cine
+    tiene dos salas, una cartelera semanal tiene dos películas: una en cada sala, con sus tres o
+    cuatro funciones diarias.
 
 ## Qué queda registrado
 1. REG-1: De cada compra: la función, el o los asientos, el método de compra (en línea o
@@ -76,6 +84,7 @@ completo el cuaderno y el mapa de asientos en papel que se usan hoy.
 3. REG-3: Con lo anterior se puede contestar: boletos vendidos por película por mes, ocupación
    por día y horario, el efecto del descuento de miércoles y del formato (doblada/subtitulada)
    en la asistencia, y la comparación de ventas entre método de compra en línea y taquilla.
+4. REG-4: De cada película: su nombre y su afiche, si tiene uno cargado.
 
 ## Salidas que consume alguien más
 | Quién | Qué recibe | Formato | Frecuencia |
@@ -123,8 +132,11 @@ presenta un carné válido al entrar. Se le cobra la diferencia en ese momento, 
 entrada (RN-5).
 
 ## Requisitos funcionales
-1. RF-1: El sistema muestra la cartelera de la semana vigente: películas, horarios, sala, y si
-   cada función es doblada o subtitulada.
+1. RF-1: El sistema muestra la cartelera de la semana vigente **un día a la vez**: el cliente
+   elige el día en una lista desplegable y, para ese día, ve cada sala —con cuántos asientos
+   tiene—, la película que proyecta —con su afiche—, sus horarios, y si cada función es doblada o
+   subtitulada. Una semana tiene decenas de funciones (RN-15 y glosario "Cartelera"): mostrarlas
+   todas juntas sería ilegible.
 2. RF-2: El sistema muestra el mapa de asientos de una función, indicando cuáles están
    disponibles, reservados temporalmente o vendidos.
 3. RF-3: El cliente puede elegir uno o más asientos disponibles de una función; quedan reservados
@@ -146,8 +158,9 @@ entrada (RN-5).
 11. RF-11: El personal de taquilla, con su cuenta, puede realizar una compra en nombre de un
     cliente presencial (elegir función, asientos, aplicar descuentos, simular pago), quedando
     registrada con método de compra "taquilla".
-12. RF-12: El personal de administración puede cargar la cartelera de la semana: películas,
-    funciones, horarios, sala, y si cada función es doblada o subtitulada.
+12. RF-12: El personal de administración puede cargar la cartelera de la semana: películas —con su
+    afiche—, funciones, horarios, sala, y si cada función es doblada o subtitulada. El afiche es
+    opcional: una película sin afiche igual se puede programar.
 13. RF-13: El personal puede marcar una función como cancelada; el sistema conserva el registro
     de quiénes compraron boleto para ella.
 14. RF-14: El sistema genera un reporte mensual de boletos vendidos por película, disponible

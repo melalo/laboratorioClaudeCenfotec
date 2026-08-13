@@ -36,7 +36,7 @@ por el mismo servidor, sin herramientas de compilación adicionales; base de dat
 ## Vertical slices
 | # | Vertical slice | Depende de | Estado |
 |---|---|---|---|
-| 1 | Cartelera y mapa de asientos | — | pendiente |
+| 1 | Cartelera y mapa de asientos | — | **cerrado** (13 ago 2026) |
 | 2 | Reserva temporal de asiento | 1 | pendiente |
 | 3 | Compra en línea completa | 2 | pendiente |
 | 4 | Venta en taquilla | 3 | pendiente |
@@ -57,9 +57,17 @@ por el mismo servidor, sin herramientas de compilación adicionales; base de dat
   prueba, y lista cada dependencia adoptada con el enlace a su repositorio oficial.
 - Una cuenta con rol administración puede cargar la cartelera de la semana: por cada función,
   película, sala, fecha y hora, y si es doblada o subtitulada (RF-12).
+- Al cargar una función, la cuenta de administración puede adjuntar el afiche de la película. El
+  afiche es opcional: una película sin afiche igual se programa (RF-12, REG-4).
 - Una cuenta con rol taquilla no puede cargar la cartelera (RN-12).
-- El cliente, sin cuenta, ve la cartelera de la semana vigente: películas, horarios, sala, y si
-  cada función es doblada o subtitulada (RF-1).
+- El cliente, sin cuenta, ve la cartelera de la semana vigente: películas —con su afiche—,
+  horarios, sala —con cuántos asientos tiene—, y si cada función es doblada o subtitulada (RF-1).
+  Si una película todavía no tiene afiche, en su lugar aparece un bloque con el título.
+- La cartelera se muestra **un día a la vez**: el cliente elige el día en una lista desplegable y
+  ve, para ese día, una tarjeta por sala con su película y sus horarios (RF-1).
+- Los datos de prueba reflejan lo que el cine realmente programa: tres funciones diarias en cada
+  sala, los siete días de la semana vigente, y **una sola película por sala** en toda la semana
+  (`ESPECIFICACION.md`, glosario "Cartelera" y RN-15).
 - El cliente elige una función y ve el mapa de asientos de la sala correspondiente, cada asiento
   identificado por fila y número, mostrado disponible (verde) porque todavía no existe ninguna
   compra ni reserva (RF-2).
@@ -70,11 +78,22 @@ por el mismo servidor, sin herramientas de compilación adicionales; base de dat
   entra; intentar con una contraseña incorrecta y verificar que el sistema lo rechaza.
 - Siguiendo únicamente lo que dice el `README.md`, arrancar la aplicación desde cero y recrear
   los datos de prueba, y verificar que la cartelera aparece.
-- Con la cuenta de administración, cargar una cartelera de prueba con al menos 2 películas y 3
-  funciones repartidas entre las dos salas, todas dentro de la semana vigente, al menos una en
-  miércoles y al menos una en otro día, y verificar que aparecen leyendo la cartelera como
-  cliente.
+- Verificar que el comando de datos de prueba deja tres funciones diarias en cada sala, los siete
+  días de la semana vigente, y que cada sala proyecta una sola película en toda la semana.
+- Verificar que la cartelera ofrece un desplegable con los días de la semana que todavía tienen
+  funciones, y que al elegir un día se muestran solo las funciones de ese día.
+- Verificar que, elegido el día, aparece una tarjeta por sala con su película, su afiche y los
+  horarios de ese día.
+- Con la cuenta de administración, cargar una función más, dentro de la semana vigente, y
+  verificar que aparece leyendo la cartelera como cliente, en el día y la sala que le corresponden.
 - Con la cuenta de taquilla, intentar cargar la cartelera y verificar que el sistema lo rechaza.
+- Como cliente sin cuenta, leer la cartelera y verificar que cada sala dice de qué tamaño es, para
+  distinguir la grande de la pequeña sin tener que abrir el mapa.
+- Con la cuenta de administración, cargar una función adjuntando una imagen como afiche, y
+  verificar que ese afiche aparece en la cartelera que ve el cliente.
+- Con la cuenta de administración, cargar una función de una película nueva **sin** adjuntar
+  imagen, y verificar que la cartelera muestra el bloque con el título en lugar del afiche, sin
+  romperse.
 - Como cliente sin cuenta, elegir la función de la sala de 120 y verificar que el mapa muestra
   120 asientos en verde; elegir la de la sala de 60 y verificar que muestra 60.
 - Reiniciar el servidor y verificar que la cartelera cargada sigue ahí — confirma que quedó en
@@ -93,7 +112,136 @@ por el mismo servidor, sin herramientas de compilación adicionales; base de dat
   y 6 reutilizan—, el archivo de configuración de la aplicación, y el `README.md`, al que cada
   vertical slice posterior le agrega las dependencias nuevas que adopte.
 
-**Evidencia** *(vacía al escribir el plan; se llena al cerrar el slice, con fecha)*
+**Evidencia** — 13 de agosto de 2026. Código en `cine/`.
+
+*Comprobaciones automatizadas* (`cine/test/`, se corren con `npm test`): **42 de 42 pasan, 0
+fallan**. Se escribieron antes del código y se las vio fallar primero por módulo inexistente.
+Cubren la regla de la semana vigente (7), los datos de prueba (7), el ingreso del personal (5), la
+carga de cartelera y sus permisos (6), la cartelera del cliente y el sistema de diseño (10), el
+mapa de asientos (5) y la persistencia (1); la restante es el archivo de apoyo de las pruebas.
+
+Comprobación por comprobación, como las pide este vertical slice:
+
+| Comprobación del plan | Cómo se corrió | Resultado |
+|---|---|---|
+| Ingresar con administración; rechazar contraseña incorrecta | Automatizada, y a mano contra la aplicación en marcha | Contraseña correcta → 302 (entra). Contraseña incorrecta → 401. Usuario inexistente → 401. Sin haber ingresado, el panel redirige al ingreso. |
+| Arrancar desde cero siguiendo únicamente el `README.md` | A mano: se borraron `node_modules/` y `datos/`, y se siguieron los tres pasos del README. **Se volvió a correr al cerrar el slice**, ya con las dependencias, las tipografías y los afiches que se fueron sumando | `npm install`, `npm run datos-de-prueba` y `npm start` funcionaron sin ningún paso extra. Respondieron con éxito la cartelera, la cartelera de otro día, las dos hojas de estilo, las tres tipografías, los dos afiches, el mapa de asientos y la pantalla de ingreso. |
+| Cargar con administración ≥2 películas y 3 funciones en las dos salas, dentro de la semana, ≥1 en miércoles y ≥1 en otro día; verificarlas como cliente | El comando de datos de prueba siembra 2 películas y 3 funciones (Sala 1 y Sala 2; lunes 17, martes 18 y **miércoles 19**). Además, a mano, la cuenta de administración cargó 2 funciones más de una tercera película | Las 5 funciones aparecen en la cartelera que ve un cliente sin cuenta, cada una con película, sala, día, hora y si es doblada o subtitulada. |
+| Con taquilla, intentar cargar la cartelera | Automatizada y a mano | `GET` y `POST` de la pantalla de cartelera → **403**, y el conteo de funciones no cambia. |
+| Verificar que los datos de prueba dejan 3 funciones diarias en cada sala, los 7 días, y una sola película por sala | Automatizada, y a mano corriendo el comando | **42 funciones**: las 14 combinaciones de día y sala tienen exactamente 3. Cada sala tiene **una** película y 21 funciones: *Sombras en el puerto* en la Sala 1 y *Camino al faro* en la Sala 2 (RN-15). |
+| Verificar el desplegable de días y que al elegir uno se ven solo sus funciones | Automatizada, y a mano contra la aplicación en marcha | El desplegable ofrece los 7 días de la semana que todavía tienen funciones. Pidiendo el domingo 16 aparecen sus 6 funciones y ninguna del sábado 15. Un día fuera de la semana, o escrito a mano en la dirección, cae al primer día con funciones. |
+| Verificar que, elegido el día, hay una tarjeta por sala con su película y sus horarios | Automatizada, y a mano | Dos tarjetas —Sala 1 con 120 asientos, Sala 2 con 60—, cada una con su afiche, su título y 3 horarios. |
+| Cargar una función adjuntando un afiche y verlo en la cartelera del cliente | Automatizada, y a mano contra la aplicación en marcha | El archivo queda guardado en `datos/afiches/` con un nombre puesto por el sistema, la película queda apuntando a él, y la cartelera lo muestra. |
+| Cargar una película sin adjuntar afiche | Automatizada | La función se carga igual y la cartelera muestra el bloque con el título en lugar de la imagen, sin romperse. |
+| Como cliente, verificar que la cartelera dice de qué tamaño es cada sala | Automatizada, y a mano contra la aplicación en marcha | Cada función muestra `Sala 1 · 120 asientos` o `Sala 2 · 60 asientos`. Antes solo decía "Sala 1" y "Sala 2", y no había forma de saber cuál era la grande sin abrir el mapa. |
+| Como cliente, mapa de 120 y de 60 asientos, todos en verde | Automatizada y a mano contra la aplicación en marcha | Función en Sala 1 → **120** asientos; función en Sala 2 → **60**. Todos con `class="asiento disponible"` (verde). Se identifican por fila y número, de `A1` a `J12`. |
+| Reiniciar el servidor y verificar que la cartelera sigue ahí | Automatizada: se apaga el servidor, se abre uno nuevo sobre el mismo archivo `.db` sin volver a sembrar | La función cargada antes del reinicio sigue estando. Confirma que quedó en SQLite y no en memoria. |
+
+*Lo que la construcción corrigió en los documentos:* `ESPECIFICACION.md` no definía dónde empieza
+y termina "la semana vigente". Quedó definida en el glosario (**jueves a miércoles**, porque los
+estrenos entran los jueves), y en `DISENO.md` se agregaron 7 decisiones nuevas con su razón: la
+semana vigente, qué funciones ve el cliente, la forma de cada sala (10×12 y 6×10), el módulo
+`node:sqlite` en vez de un paquete externo, las contraseñas cifradas con scrypt, `express-session`
+para la sesión del personal, y Pico.css guardada dentro del proyecto.
+
+Al revisar el slice ya construido aparecieron dos huecos más, y los dos se corrigieron primero en
+la especificación y después en el código:
+
+- **RF-1 no pedía el tamaño de la sala.** El cliente leía "Sala 1" y "Sala 2" sin ninguna forma de
+  saber cuál era la grande. RF-1 ahora exige mostrarlo, este vertical slice ganó una condición y su
+  comprobación, y la cartelera lo muestra.
+- **Asientos fuera de servicio.** Se revisó si existía una regla sobre butacas deshabilitadas en la
+  sala pequeña: no aparece en ninguna consigna, ni en el `PROMPT.md`, ni en los documentos
+  congelados del Caso práctico 3. Se decidió dejarlo fuera de alcance y quedó escrito como tal en
+  `ESPECIFICACION.md`, para que no vuelva a discutirse como un hueco silencioso.
+
+*Sistema de diseño.* Ya cerrado el slice, la estudiante aportó `VISUALS.md` —paleta oscura,
+tipografías, escala de espaciado, formas y componentes— y se aplicó a las pantallas construidas.
+Qué implicó, además de reescribir la hoja de estilos propia:
+
+- `DISENO.md` sumó tres decisiones: `VISUALS.md` como fuente del estilo con Pico.css conservado
+  como base y reconfigurado con sus variables; el modo oscuro fijo; y las tipografías guardadas
+  dentro del proyecto (`public/fonts/`, 5 archivos, ~92 KB, licencia OFL-1.1) para no depender de
+  internet, mismo criterio que ya se había usado con Pico.css.
+- **Conflicto resuelto a favor de `DISENO.md`:** `VISUALS.md` propone un semáforo de tres estados
+  para el mapa de asientos, con amarillo para "reservado". Se mantuvieron **dos** estados —verde
+  disponible, gris no disponible—, porque al cliente un asiento reservado por otro y uno vendido le
+  sirven para lo mismo. El amarillo queda definido y sin usar, y así está escrito en `DISENO.md`
+  para que no parezca un olvido. Hay una comprobación que lo fija: la leyenda del mapa debe tener
+  exactamente dos estados.
+- Comprobaciones nuevas: el formato de cada función se muestra como pastilla con el color que le
+  asigna `VISUALS.md`; las tres tipografías se sirven desde el proyecto y la hoja de estilos no
+  pide nada a internet; y la de los dos estados del mapa.
+- `semana4/CLAUDE.md` sumó `VISUALS.md` a la lista de entregables al repositorio.
+
+*Segunda revisión del sistema de diseño.* Al mirarlo funcionando aparecieron tres cosas más:
+
+- **El amarillo vuelve, con otro significado.** Se revisó la decisión de dos estados: el cliente sí
+  necesita ver cuál asiento está tomando mientras elige. El mapa pasa a **tres** estados —verde
+  disponible, amarillo *lo que este cliente está eligiendo*, gris no disponible—, y sigue **sin**
+  distinguir "reservado por otro" de "vendido", porque para quien mira son lo mismo. Ojo: eso le da
+  al amarillo un significado distinto del que le da `VISUALS.md`, y así quedó escrito en
+  `DISENO.md`. El comportamiento se construye en el **vertical slice 2**, que es donde se elige
+  asiento; este vertical slice sigue mostrando solo verde, y su comprobación de dos estados en la
+  leyenda sigue siendo la correcta para lo que hoy existe.
+- **Los afiches no se veían porque el sistema no los guardaba.** `VISUALS.md` da por sentado un
+  afiche en cada tarjeta, pero la entidad Película era solo `id, nombre` y ningún requisito lo
+  pedía. Se corrigió primero la especificación (glosario "Afiche", RF-1, RF-12 y el nuevo REG-4) y
+  el modelo de datos de `DISENO.md`, con tres decisiones nuevas: el archivo vive en `datos/afiches/`
+  y la base guarda solo su nombre; los archivos subidos se reciben con `multer`, renombrados por el
+  sistema, solo imágenes y hasta 2 MB; y una película sin afiche muestra un bloque con su título,
+  porque el afiche es opcional. Los dos afiches de los datos de prueba son dibujos inventados para
+  este proyecto: no son de películas reales.
+- **La marca y el acceso del personal.** "Cine Variedades" pasó a 28px —`VISUALS.md` no define un
+  tamaño para la marca—, y el acceso del personal salió del encabezado y se fue a un pie de página
+  nuevo, porque la cartelera es la pantalla del cliente. El personal que ya entró sigue viendo su
+  cuenta en el encabezado. Las dos decisiones quedaron en `DISENO.md`, y hay una comprobación que
+  fija que ese enlace esté en el pie y no en el encabezado.
+
+*Tercera revisión: la cartelera tenía una sola función por película.* Al mirarla se vio que cada
+película aparecía una o dos veces en toda la semana. La causa: este vertical slice pedía como
+comprobación "al menos 2 películas y 3 funciones", que es un **mínimo para verificar**, y los datos
+de prueba se sembraron con exactamente ese mínimo. Buscando en los documentos apareció —otra vez—
+un dato del negocio que estaba en la consigna original y nunca había llegado a la especificación:
+el cine *"programa entre tres y cuatro funciones diarias en cada uno [de los dos auditorios]"*.
+Qué se hizo:
+
+- `ESPECIFICACION.md` incorporó el dato al glosario "Cartelera": una semana típica tiene entre 42 y
+  56 funciones. Con eso, RF-1 pasó a exigir que la cartelera se organice **por película**, con los
+  horarios de cada una agrupados por día: una lista corrida de decenas de funciones sueltas sería
+  ilegible.
+- `DISENO.md` sumó la decisión de agrupar por película —descartando agrupar por día, que obligaría
+  a repetir el afiche siete veces— y la de cómo se acomoda la tarjeta en pantallas chicas: abajo de
+  480px el afiche va arriba, a lo ancho, y los textos debajo.
+- Los datos de prueba pasaron de 3 funciones a **42**: 3 diarias en cada sala, los 7 días, con 4
+  películas rotando entre los días y entre las dos salas. Se dibujaron dos afiches inventados más.
+- Comprobaciones nuevas: que el sembrado deje 3 funciones diarias por sala los 7 días; que cada
+  película tenga varias funciones y no una sola; que la cartelera muestre una tarjeta por película
+  y no una por función; y que dentro de cada tarjeta los horarios estén agrupados por día.
+
+*Cuarta revisión: la cartelera se ve un día a la vez.* Mostrar los siete días de golpe seguía
+siendo demasiado, y además la programación no era la del cine: una misma película saltaba entre las
+dos salas. Se revisó la consigna para ver si obligaba a tener más de dos películas —**no dice nada
+al respecto**, ni la del Caso práctico 3 ni la del 4 ni el `PROMPT.md`— y con eso se decidió:
+
+- `ESPECIFICACION.md` sumó **RN-15**: cada sala proyecta una sola película durante toda la semana,
+  así que una cartelera semanal tiene dos películas, una por sala. Y RF-1 pasó a describir la
+  cartelera **un día a la vez**: el cliente elige el día en una lista desplegable y ve, para ese
+  día, cada sala con su película y sus horarios.
+- `DISENO.md` sumó tres decisiones: mostrar un día a la vez encabezando por sala y no por película;
+  que el desplegable funcione **sin JavaScript**, con el día viajando en la dirección de la página
+  para que la pantalla se pueda compartir por enlace; y que RN-15 **no se hace cumplir por
+  software** —administración es personal del cine y sabe lo que carga—, pero la pantalla no se rompe
+  si una sala termina con dos películas: dibuja un bloque por cada una.
+- Los horarios dejaron de ser botones con recuadro: ahora son solo la hora, en texto, con la
+  etiqueta de doblada o subtitulada en tamaño menor al de la hora, porque es un dato de apoyo.
+- Los datos de prueba pasaron de 4 películas a **2**, una por sala, con sus 21 funciones cada una.
+  Los otros dos afiches quedan en `afiches-de-muestra/` para probar la subida a mano.
+
+*Lo que a propósito NO se construyó,* para no meter andamiaje fuera de su vertical slice: no
+existe la tabla de Compras (la crea el vertical slice 2, con la primera reserva) ni el estado
+"cancelada" de una Función (lo agrega el vertical slice 6). Por eso el mapa de asientos de este
+slice muestra todo disponible: no hay nada que pueda ocuparlo todavía.
 
 ---
 
@@ -101,8 +249,13 @@ por el mismo servidor, sin herramientas de compilación adicionales; base de dat
 **Qué tiene que ser cierto**
 - El cliente, desde el mapa de asientos de una función, elige uno o más asientos disponibles
   (RF-3).
+- Mientras el cliente los va eligiendo, esos asientos se le muestran **en amarillo** en su propio
+  mapa, para que vea cuáles está tomando antes de confirmar (`DISENO.md` → "Otras decisiones",
+  representación visual del mapa de asientos). Este es el vertical slice que estrena el amarillo:
+  el vertical slice 1 solo muestra verde.
 - Al elegirlos, quedan reservados temporalmente: el mapa deja de mostrarlos disponibles para
-  cualquier otro cliente que lo consulte (RN-6, RN-7).
+  cualquier otro cliente que lo consulte (RN-6, RN-7). Los otros clientes los ven **en gris**, sin
+  distinguirlos de un asiento ya vendido.
 - Si pasan 5 minutos desde la reserva sin que se complete el pago, el asiento vuelve a aparecer
   disponible (RF-4). (Completar el pago se construye en el vertical slice 3; hasta que ese slice
   exista, toda reserva de este slice vence a los 5 minutos porque no hay forma de pagarla.)
@@ -111,8 +264,9 @@ por el mismo servidor, sin herramientas de compilación adicionales; base de dat
   disponible y se le muestra el mapa actualizado (`DISENO.md` → "Manejo de errores").
 
 **Con qué se comprueba**
-- Como cliente, elegir 2 asientos disponibles y verificar que una segunda sesión de cliente que
-  consulta el mismo mapa ya no los ve disponibles.
+- Como cliente, elegir 2 asientos disponibles y verificar que en el propio mapa quedan en amarillo,
+  y que una segunda sesión de cliente que consulta el mismo mapa ya no los ve disponibles: los ve
+  en gris, igual que un asiento vendido.
 - Prueba automatizada: crear una reserva, retroceder 6 minutos su fecha/hora de creación en la
   base de datos, volver a pedir el mapa, y verificar que esos asientos aparecen disponibles otra
   vez.
@@ -361,6 +515,7 @@ por el mismo servidor, sin herramientas de compilación adicionales; base de dat
 | REG-1 (qué se registra de cada compra) | 3, 4 |
 | REG-2 (qué se registra de cada función) | 1, 6 |
 | REG-3 (preguntas que se pueden contestar) | 7 |
+| REG-4 (nombre y afiche de cada película) | 1 |
 | Recorrido "Compra en línea (termina bien)" | 1, 2, 3 |
 | Recorrido "Venta en taquilla (termina bien)" | 1, 2, 4 |
 | Recorrido "Código de confirmación perdido" | 5 |

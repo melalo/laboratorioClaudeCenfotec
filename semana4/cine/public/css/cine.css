@@ -1,0 +1,649 @@
+/* Cine Variedades — hoja de estilos propia.
+   La fuente del estilo es VISUALS.md: paleta, tipografias, espaciado y formas salen
+   de ahi. Este archivo hace tres cosas, en este orden:
+     1. Declara las tipografias, guardadas dentro del proyecto (nada viene de internet).
+     2. Traduce VISUALS.md a variables, y se las presta a Pico.css para que su base
+        (formularios, tablas, botones) quede con el estilo del cine.
+     3. Agrega lo que ninguna libreria trae: el mapa de asientos y las pastillas.
+*/
+
+/* ---------------------------------------------------------------- 1. Tipografias */
+
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('../fonts/manrope-latin-600-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('../fonts/manrope-latin-700-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Work Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../fonts/work-sans-latin-400-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('../fonts/jetbrains-mono-latin-500-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('../fonts/jetbrains-mono-latin-700-normal.woff2') format('woff2');
+}
+
+/* ------------------------------------------------- 2. VISUALS.md en variables */
+
+:root,
+[data-theme='dark'] {
+  /* Superficies: tonos de casi negro, para dar profundidad sin sombras pesadas. */
+  --cine-surface: #131313;
+  --cine-surface-low: #1c1b1b;
+  --cine-surface-container: #20201f;
+  --cine-surface-high: #2a2a2a;
+  --cine-surface-highest: #353535;
+
+  /* Texto y bordes */
+  --cine-on-surface: #e5e2e1;
+  --cine-on-surface-variant: #d0c5af;
+  --cine-outline: #99907c;
+  --cine-outline-variant: #4d4635;
+
+  /* Dorado: marca, botones principales, seleccion activa */
+  --cine-primary: #f2ca50;
+  --cine-on-primary: #3c2f00;
+  --cine-primary-container: #d4af37;
+
+  --cine-secondary: #4ae183;
+  --cine-error: #ffb4ab;
+  --cine-on-error: #690005;
+  --cine-error-container: #93000a;
+
+  /* Asientos: solo dos estados (DISENO.md). El amarillo de VISUALS.md queda sin
+     usar a proposito: al cliente, un asiento reservado por otro y uno vendido le
+     sirven para lo mismo. */
+  --cine-seat-available: #2ecc71;
+  --cine-seat-unavailable: #4a4a4a;
+
+  /* Formato de la funcion */
+  --cine-dubbed: #3498db;
+  --cine-subtitled: #9b59b6;
+
+  /* Ritmo de 8px */
+  --cine-base: 16px;
+  --cine-gutter: 12px;
+  --cine-margin: 16px;
+  --cine-seat-gap: 4px;
+
+  /* Formas */
+  --cine-round-sm: 0.125rem;
+  --cine-round: 0.25rem;
+  --cine-round-lg: 0.5rem;
+  --cine-round-full: 9999px;
+
+  /* Tipografias */
+  --cine-titulo: 'Manrope', system-ui, sans-serif;
+  --cine-texto: 'Work Sans', system-ui, sans-serif;
+  --cine-dato: 'JetBrains Mono', ui-monospace, monospace;
+
+  /* --- Las mismas decisiones, prestadas a Pico.css --- */
+  --pico-font-family-sans-serif: var(--cine-texto);
+  --pico-font-family: var(--cine-texto);
+  --pico-font-family-monospace: var(--cine-dato);
+  --pico-font-size: 16px;
+  --pico-line-height: 1.5;
+  --pico-border-radius: var(--cine-round);
+  --pico-spacing: var(--cine-base);
+
+  --pico-background-color: var(--cine-surface);
+  --pico-color: var(--cine-on-surface);
+  --pico-h1-color: var(--cine-on-surface);
+  --pico-h2-color: var(--cine-on-surface);
+  --pico-h3-color: var(--cine-on-surface);
+  --pico-h4-color: var(--cine-on-surface);
+  --pico-muted-color: var(--cine-outline);
+  --pico-muted-border-color: var(--cine-surface-high);
+
+  --pico-primary: var(--cine-primary);
+  --pico-primary-background: var(--cine-primary);
+  --pico-primary-border: var(--cine-primary);
+  --pico-primary-inverse: var(--cine-on-primary);
+  --pico-primary-hover: var(--cine-primary-container);
+  --pico-primary-hover-background: var(--cine-primary-container);
+  --pico-primary-hover-border: var(--cine-primary-container);
+  --pico-primary-focus: rgba(242, 202, 80, 0.35);
+  --pico-primary-underline: rgba(242, 202, 80, 0.5);
+
+  --pico-secondary: var(--cine-on-surface-variant);
+  --pico-secondary-background: transparent;
+  --pico-secondary-border: var(--cine-outline-variant);
+  --pico-secondary-inverse: var(--cine-on-surface);
+  --pico-secondary-hover: var(--cine-primary);
+  --pico-secondary-hover-background: transparent;
+  --pico-secondary-hover-border: var(--cine-primary);
+
+  --pico-card-background-color: var(--cine-surface-container);
+  --pico-card-sectioning-background-color: var(--cine-surface-low);
+  --pico-card-border-color: var(--cine-outline-variant);
+  --pico-card-box-shadow: none;
+
+  --pico-form-element-background-color: var(--cine-surface-low);
+  --pico-form-element-border-color: var(--cine-outline-variant);
+  --pico-form-element-color: var(--cine-on-surface);
+  --pico-form-element-placeholder-color: var(--cine-outline);
+  --pico-form-element-active-background-color: var(--cine-surface-low);
+  --pico-form-element-active-border-color: var(--cine-primary);
+  --pico-form-element-focus-color: var(--cine-primary);
+
+  --pico-table-border-color: var(--cine-outline-variant);
+  --pico-table-row-stripped-background-color: var(--cine-surface-low);
+  --pico-del-color: var(--cine-error);
+  --pico-code-background-color: var(--cine-surface-high);
+  --pico-code-color: var(--cine-on-surface-variant);
+}
+
+/* --------------------------------------------------------- 3. Base y tipografia */
+
+body {
+  background: var(--cine-surface);
+  color: var(--cine-on-surface);
+  font-family: var(--cine-texto);
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--cine-titulo);
+}
+
+h2 {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 32px;
+  letter-spacing: -0.01em;
+}
+
+h3 {
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 28px;
+}
+
+@media (min-width: 768px) {
+  h2 {
+    font-size: 32px;
+    line-height: 40px;
+  }
+}
+
+/* La marca es lo primero que se lee: va grande, en dorado y en la tipografia de titulos. */
+.marca {
+  font-family: var(--cine-titulo);
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 36px;
+  color: var(--cine-primary);
+  text-decoration: none;
+  letter-spacing: -0.01em;
+  display: inline-block;
+  padding: var(--cine-base) 0;
+}
+
+header.container nav {
+  border-bottom: 1px solid var(--cine-outline-variant);
+}
+
+/* ------------------------------------------------------------ Pie de página */
+
+.pie {
+  margin-top: calc(var(--cine-base) * 6);
+  padding: calc(var(--cine-base) * 3) var(--cine-base) calc(var(--cine-base) * 4);
+  border-top: 1px solid var(--cine-outline-variant);
+  color: var(--cine-outline);
+  font-size: 14px;
+}
+
+.pie-columnas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--cine-base) * 3);
+  justify-content: space-between;
+}
+
+.pie p {
+  margin: 8px 0 4px;
+}
+
+.pie-marca {
+  font-family: var(--cine-titulo);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--cine-on-surface-variant);
+}
+
+.pie-acceso a {
+  font-family: var(--cine-dato);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--cine-on-surface-variant);
+  border: 1px solid var(--cine-outline-variant);
+  border-radius: var(--cine-round);
+  padding: 8px 16px;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.pie-acceso a:hover {
+  color: var(--cine-primary);
+  border-color: var(--cine-primary);
+}
+
+.pie-nota {
+  margin-top: calc(var(--cine-base) * 3);
+  font-family: var(--cine-dato);
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  color: var(--cine-outline-variant);
+}
+
+/* Datos tecnicos —horas, capacidades, cuentas— en monoespaciada: los digitos
+   quedan alineados y se leen como dato, no como prosa (VISUALS.md). */
+.semana,
+.ficha-funcion,
+.leyenda,
+.etiqueta-fila,
+.asiento,
+.dato {
+  font-family: var(--cine-dato);
+}
+
+.semana,
+.leyenda {
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 16px;
+  letter-spacing: 0.05em;
+  color: var(--cine-outline);
+  text-transform: uppercase;
+}
+
+/* ---------------------------------------------------------- 4. Tarjetas y avisos */
+
+/* Selector del dia. Es un formulario de verdad: el dia viaja en la direccion de la
+   pagina, sin nada de JavaScript (DISENO.md). */
+.selector-dia {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 calc(var(--cine-base) * 1.5);
+}
+
+.selector-dia label {
+  font-family: var(--cine-dato);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--cine-outline);
+  margin: 0;
+}
+
+.selector-dia select,
+.selector-dia button {
+  width: auto;
+  margin: 0;
+}
+
+.selector-dia select {
+  min-width: 14rem;
+  padding: 8px 32px 8px 12px;
+}
+
+.selector-dia button {
+  padding: 8px 20px;
+}
+
+/* Tarjeta de sala: el encabezado dice que sala es y de que tamano, y adentro va la
+   pelicula que proyecta ese dia con sus horarios. */
+article.sala {
+  background: var(--cine-surface-container);
+  border: 1px solid var(--cine-outline-variant);
+  border-radius: var(--cine-round-lg);
+  padding: var(--cine-base);
+  margin-bottom: var(--cine-base);
+}
+
+.sala-encabezado {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--cine-outline-variant);
+}
+
+/* Se dibuja primero para el telefono angosto: el afiche arriba, ocupando el ancho, y
+   los textos abajo (VISUALS.md: "On mobile, the layout reflows into a single-column
+   stack"). Desde 480px el afiche pasa a estar al lado. */
+.en-cartel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cine-base);
+}
+
+.en-cartel + .en-cartel {
+  margin-top: var(--cine-base);
+  padding-top: var(--cine-base);
+  border-top: 1px dashed var(--cine-outline-variant);
+}
+
+.datos-pelicula {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.datos-pelicula h3 {
+  margin: 0 0 12px;
+}
+
+/* Apilado: el afiche se ve como una banda a lo ancho, recortada en la parte de arriba,
+   que es donde esta el dibujo. El titulo no hace falta ahi: esta al lado, en el h3. */
+.afiche {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  object-position: center 30%;
+  border-radius: var(--cine-round);
+  border: 1px solid var(--cine-outline-variant);
+  display: block;
+}
+
+.afiche-vacio {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--cine-base);
+  background: linear-gradient(160deg, var(--cine-surface-high), var(--cine-surface-low));
+  font-family: var(--cine-titulo);
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 18px;
+  color: var(--cine-on-surface-variant);
+}
+
+/* Desde 480px hay ancho para poner el afiche al lado, ya con su forma de afiche. */
+@media (min-width: 480px) {
+  .en-cartel {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+  .afiche {
+    flex: 0 0 96px;
+    width: 96px;
+    aspect-ratio: 2 / 3;
+    object-position: center;
+  }
+}
+
+@media (min-width: 768px) {
+  article.sala {
+    padding: calc(var(--cine-base) * 1.5);
+  }
+  .en-cartel {
+    gap: calc(var(--cine-base) * 1.5);
+  }
+  .afiche {
+    flex-basis: 132px;
+    width: 132px;
+  }
+}
+
+.nombre-sala {
+  font-family: var(--cine-dato);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--cine-on-surface);
+}
+
+.capacidad-sala {
+  font-family: var(--cine-dato);
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  color: var(--cine-outline);
+}
+
+/* --- Los horarios del dia --- */
+/* Sin recuadro: solo la hora, en texto, y al lado la etiqueta de formato en chico. Con
+   tres o cuatro horarios por sala, un boton por cada uno llena la pantalla de cajas
+   (DISENO.md, "Como se muestra cada horario"). */
+
+.horarios {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 20px;
+}
+
+.horario {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-decoration: none;
+}
+
+.horario .hora {
+  font-family: var(--cine-dato);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 24px;
+  color: var(--cine-on-surface);
+}
+
+.horario:hover .hora,
+.horario:focus .hora {
+  color: var(--cine-primary);
+  text-decoration: underline;
+}
+
+.horario .pastilla {
+  font-size: 9px;
+  line-height: 12px;
+  padding: 1px 6px;
+  letter-spacing: 0.06em;
+}
+
+.aviso-error {
+  background: var(--cine-surface-container);
+  border: 1px solid var(--cine-error-container);
+  border-left: 3px solid var(--cine-error);
+  border-radius: var(--cine-round);
+  padding: calc(var(--cine-base) * 1.5) calc(var(--cine-base) * 2);
+  margin-bottom: calc(var(--cine-base) * 2);
+  color: var(--cine-error);
+}
+
+.aviso-error p {
+  margin: 0;
+}
+
+ul.acciones {
+  list-style: none;
+  padding: 0;
+}
+
+/* ------------------------------------------------------------- 5. Pastillas */
+
+.pastilla {
+  display: inline-block;
+  font-family: var(--cine-dato);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 16px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 4px 12px;
+  border-radius: var(--cine-round-full);
+  border: 1px solid transparent;
+}
+
+.pastilla.doblada {
+  color: var(--cine-dubbed);
+  border-color: var(--cine-dubbed);
+  background: rgba(52, 152, 219, 0.12);
+}
+
+.pastilla.subtitulada {
+  color: var(--cine-subtitled);
+  border-color: var(--cine-subtitled);
+  background: rgba(155, 89, 182, 0.14);
+}
+
+/* -------------------------------------------------------- 6. Mapa de asientos */
+
+.marco-mapa {
+  background: var(--cine-surface-low);
+  border: 1px solid var(--cine-outline-variant);
+  border-radius: var(--cine-round-lg);
+  padding: calc(var(--cine-base) * 2);
+  margin-bottom: calc(var(--cine-base) * 2);
+  overflow-x: auto; /* en pantallas angostas el mapa se desliza, no se deforma */
+}
+
+.pantalla-sala {
+  text-align: center;
+  font-family: var(--cine-dato);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.4em;
+  color: var(--cine-on-primary);
+  background: linear-gradient(180deg, var(--cine-primary), var(--cine-primary-container));
+  border-radius: var(--cine-round) var(--cine-round) 50% 50% / var(--cine-round) var(--cine-round) 12px 12px;
+  padding: 6px;
+  margin-bottom: calc(var(--cine-base) * 3);
+  min-width: 19rem;
+}
+
+.mapa {
+  min-width: 19rem;
+}
+
+.fila-asientos {
+  display: flex;
+  align-items: center;
+  gap: var(--cine-seat-gap);
+  margin-bottom: var(--cine-seat-gap);
+}
+
+.etiqueta-fila {
+  flex: 0 0 16px;
+  width: 16px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  color: var(--cine-outline);
+  text-align: center;
+}
+
+.asiento {
+  flex: 1 1 0;
+  min-width: 20px;
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: var(--cine-round-sm);
+  user-select: none;
+}
+
+.asiento.disponible {
+  background: var(--cine-seat-available);
+  color: #06341a;
+}
+
+.asiento.ocupado {
+  background: var(--cine-seat-unavailable);
+  color: #1a1a1a;
+}
+
+@media (min-width: 768px) {
+  .asiento {
+    font-size: 14px;
+    line-height: 14px;
+  }
+  .etiqueta-fila {
+    flex-basis: 24px;
+    width: 24px;
+  }
+}
+
+.leyenda {
+  display: flex;
+  align-items: center;
+  gap: var(--cine-base);
+  flex-wrap: wrap;
+}
+
+.asiento-muestra {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: var(--cine-round-sm);
+  vertical-align: -0.15em;
+  margin-right: 4px;
+}
+
+.asiento-muestra.disponible {
+  background: var(--cine-seat-available);
+}
+
+.asiento-muestra.ocupado {
+  background: var(--cine-seat-unavailable);
+}
+
+.ficha-funcion {
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--cine-on-surface-variant);
+}
+
+tr.fuera-de-semana td {
+  opacity: 0.5;
+}
+
+table {
+  font-size: 14px;
+}
+
+table th {
+  font-family: var(--cine-dato);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--cine-outline);
+}

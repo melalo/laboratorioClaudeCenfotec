@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 600" width="400" height="600" role="img" aria-label="Afiche de El jardin de invierno">
+  <defs>
+    <linearGradient id="invernadero" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0f3b33"/>
+      <stop offset="60%" stop-color="#14514a"/>
+      <stop offset="100%" stop-color="#04140f"/>
+    </linearGradient>
+    <linearGradient id="vidrio" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#bfe6d5" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="#bfe6d5" stop-opacity="0.04"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="400" height="600" fill="url(#invernadero)"/>
+
+  <!-- estructura de invernadero -->
+  <g stroke="#7fd0b4" stroke-opacity="0.35" stroke-width="2" fill="none">
+    <path d="M70 430 L70 200 L200 110 L330 200 L330 430"/>
+    <path d="M200 110 L200 430"/>
+    <path d="M70 265 L330 265 M70 330 L330 330 M70 395 L330 395"/>
+    <path d="M135 155 L135 430 M265 155 L265 430"/>
+  </g>
+  <path d="M70 200 L200 110 L330 200 L330 430 L70 430 Z" fill="url(#vidrio)"/>
+
+  <!-- hojas -->
+  <g fill="#2f8f6f">
+    <path d="M200 430 C160 390 150 330 190 300 C215 340 220 390 200 430 Z"/>
+    <path d="M200 430 C240 400 258 345 226 312 C202 350 192 396 200 430 Z" fill="#3fae86"/>
+    <path d="M148 430 C122 404 116 364 142 344 C160 374 162 408 148 430 Z" fill="#256f57"/>
+    <path d="M262 430 C288 404 294 364 268 344 C250 374 248 408 262 430 Z" fill="#256f57"/>
+  </g>
+  <circle cx="200" cy="292" r="9" fill="#f2ca50"/>
+  <rect x="60" y="430" width="280" height="8" fill="#04140f"/>
+
+  <text x="200" y="504" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="26" fill="#d0c5af" letter-spacing="8">EL JARDIN DE</text>
+  <text x="200" y="548" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="44" font-weight="700" fill="#e5e2e1" letter-spacing="2">INVIERNO</text>
+  <rect x="155" y="566" width="90" height="2" fill="#f2ca50"/>
+</svg>

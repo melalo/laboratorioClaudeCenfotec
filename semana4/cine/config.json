@@ -1,0 +1,5 @@
+{
+  "puerto": 3000,
+  "archivoBaseDeDatos": "datos/cine.db",
+  "claveDeSesion": "cine-variedades-prototipo-no-es-un-secreto-real"
+}
