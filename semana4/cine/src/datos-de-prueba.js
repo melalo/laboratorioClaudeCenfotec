@@ -70,8 +70,17 @@ export function sembrarDatosDePrueba(
   hoy = new Date(),
   carpetaAfiches = carpetaAfichesDe(configuracion.rutaBaseDeDatos),
 ) {
-  // El orden importa: primero lo que depende de otras tablas.
-  db.exec('DELETE FROM funciones; DELETE FROM asientos; DELETE FROM peliculas; DELETE FROM salas; DELETE FROM cuentas;');
+  // El orden importa: primero lo que depende de otras tablas. Las compras van al
+  // principio porque apuntan a una funcion y a un asiento: si se borraran despues, la
+  // base impediria borrar las funciones y el comando fallaria entero. Los boletos
+  // (compras_asientos) se van solos con su compra, por el ON DELETE CASCADE.
+  //
+  // Se descubrio al construir el vertical slice 3: el comando venia fallando desde que el
+  // vertical slice 2 creo la tabla de compras, pero solo se notaba si alguien habia
+  // reservado o comprado algo antes de volver a sembrar.
+  db.exec(
+    'DELETE FROM compras; DELETE FROM funciones; DELETE FROM asientos; DELETE FROM peliculas; DELETE FROM salas; DELETE FROM cuentas;',
+  );
 
   for (const cuenta of CUENTAS) {
     const { sal, cifrada } = cifrar(cuenta.contrasena);

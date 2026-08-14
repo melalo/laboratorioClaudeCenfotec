@@ -372,7 +372,18 @@ test('la pantalla de la reserva dice a que hora vence y muestra la barra del pla
     // El reloj de las pruebas esta clavado a las 10:00, asi que vence a las 10:03.
     assert.match(html, /10:03/);
     assert.match(html, /barra-plazo/, 'la barra que se vacia en lo que queda del plazo');
-    assert.doesNotMatch(html, /<script/, 'la barra es CSS: la pantalla sigue sin JavaScript');
+
+    // La barra sigue siendo CSS puro: se vacia con una animacion declarada en la hoja de
+    // estilos, y en la etiqueta solo viaja cuanto dura y desde donde arranca.
+    //
+    // Esta comprobacion antes exigia que la pantalla entera no trajera ninguna etiqueta
+    // <script>. Dejo de hacerlo al construir el vertical slice 3, que puso en esta misma
+    // pantalla la tabla de tipos de boleto con su contador, y con eso se permitio
+    // JavaScript dentro de la pagina (DISENO.md, "Si las pantallas pueden usar
+    // JavaScript"). No es una regresion del vertical slice 2: la barra no cambio en nada,
+    // y lo que se dejo de afirmar es una regla del proyecto que dejo de existir.
+    assert.match(html, /animation-duration: \d+s/, 'cuanto dura la animacion lo escribe el servidor');
+    assert.doesNotMatch(html, /barra[^<]*<script/, 'la barra no la mueve ningun JavaScript');
   } finally {
     await app.cerrar();
   }

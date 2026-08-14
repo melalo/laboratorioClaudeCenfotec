@@ -67,7 +67,7 @@
   --cine-on-primary: #3c2f00;
   --cine-primary-container: #d4af37;
 
-  --cine-secondary: #4ae183;
+  --cine-secondary: #85d8a5;
   --cine-error: #ffb4ab;
   --cine-on-error: #690005;
   --cine-error-container: #93000a;
@@ -75,7 +75,7 @@
   /* Asientos: tres estados (DISENO.md). El amarillo es "los que este cliente esta
      eligiendo", no "reservado por otro" como en VISUALS.md: al cliente, un asiento
      reservado por otro y uno vendido le sirven para lo mismo, y los dos van en gris. */
-  --cine-seat-available: #2ecc71;
+  --cine-seat-available: #7ac77a;
   --cine-seat-choosing: #f1c40f;
   --cine-seat-unavailable: #4a4a4a;
 
@@ -200,8 +200,26 @@ h3 {
   color: var(--cine-primary);
   text-decoration: none;
   letter-spacing: -0.01em;
-  display: inline-block;
+  /* El logo y el nombre son una sola pieza: van en fila, centrados entre si, y el
+     espacio que los separa es el del ritmo de 8px de VISUALS.md. */
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cine-gutter);
   padding: var(--cine-base) 0;
+}
+
+/* El logo se mide por su alto, para que quede a la misma altura que el nombre pase lo
+   que pase con el ancho del dibujo. El alto lo marca la linea del texto (36px). */
+.marca .logo {
+  height: 36px;
+  width: auto;
+  display: block;
+}
+
+@media (max-width: 480px) {
+  .marca .logo {
+    height: 28px;
+  }
 }
 
 header.container nav {
@@ -253,14 +271,6 @@ header.container nav {
 .pie-acceso a:hover {
   color: var(--cine-primary);
   border-color: var(--cine-primary);
-}
-
-.pie-nota {
-  margin-top: calc(var(--cine-base) * 3);
-  font-family: var(--cine-dato);
-  font-size: 12px;
-  letter-spacing: 0.05em;
-  color: var(--cine-outline-variant);
 }
 
 /* Datos tecnicos —horas, capacidades, cuentas— en monoespaciada: los digitos
@@ -803,4 +813,262 @@ table th {
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--cine-outline);
+}
+
+/* --------------------------------------- 6c. El pago y el codigo de confirmacion */
+
+/* La tabla de tipos de boleto, con su contador. Las dos filas siempre suman los asientos
+   que el cliente ya eligio en el mapa: la tabla los reparte, no los agrega (DISENO.md,
+   "Como se muestra y se elige el reparto entre boletos regulares y de estudiante"). */
+.tabla-boletos {
+  width: 100%;
+  margin: 0 0 var(--cine-base);
+  border: 1px solid var(--cine-outline-variant);
+  border-radius: var(--cine-round-lg);
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
+}
+
+.tabla-boletos thead th {
+  background: var(--cine-surface-low);
+  text-align: left;
+  padding: 10px var(--cine-gutter);
+  white-space: nowrap;
+}
+
+.tabla-boletos thead th:nth-child(2),
+.tabla-boletos thead th:nth-child(3),
+.tabla-boletos thead th:nth-child(4) {
+  text-align: right;
+}
+
+.tabla-boletos tbody th,
+.tabla-boletos tbody td,
+.tabla-boletos tfoot td {
+  padding: var(--cine-gutter);
+  border-top: 1px solid var(--cine-outline-variant);
+  vertical-align: middle;
+}
+
+.tabla-boletos tbody th {
+  text-align: left;
+  font-family: var(--cine-titulo);
+  font-weight: 600;
+}
+
+.tabla-boletos .precio,
+.tabla-boletos .monto {
+  font-family: var(--cine-dato);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.tabla-boletos .precio {
+  color: var(--cine-on-surface-variant);
+}
+
+/* El contador: menos, el numero, mas. */
+.tabla-boletos .cantidad {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.tabla-boletos .paso {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  margin: 0;
+  font-size: 18px;
+  line-height: 1;
+  font-family: var(--cine-dato);
+  background: var(--cine-surface-high);
+  color: var(--cine-on-surface);
+  border: 1px solid var(--cine-outline-variant);
+  border-radius: var(--cine-round);
+  cursor: pointer;
+}
+
+.tabla-boletos .paso:hover:not(:disabled) {
+  border-color: var(--cine-primary);
+  color: var(--cine-primary);
+}
+
+/* Un boton que se pasaria del limite se apaga, en vez de dejar que no haga nada. */
+.tabla-boletos .paso:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* El numero: en la fila de estudiante es un campo de verdad —es el unico dato que viaja
+   al servidor—; en la de entrada regular es solo texto, porque sale de restar. Los dos
+   se ven igual para que la tabla se lea pareja. */
+.tabla-boletos .numero {
+  display: inline-block;
+  width: 44px;
+  text-align: center;
+  font-family: var(--cine-dato);
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--cine-on-surface);
+  vertical-align: middle;
+}
+
+.tabla-boletos input.numero {
+  margin: 0;
+  padding: 4px 0;
+  height: 32px;
+  background: transparent;
+  border: 1px solid transparent;
+  box-shadow: none;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* Las flechitas que el navegador le pone a un campo numerico sobran: ya estan el − y el +. */
+.tabla-boletos input.numero::-webkit-outer-spin-button,
+.tabla-boletos input.numero::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.tabla-boletos input.numero:focus {
+  border-color: var(--cine-primary);
+  border-radius: var(--cine-round);
+}
+
+.tabla-boletos tfoot td {
+  background: var(--cine-surface-low);
+}
+
+.tabla-boletos .reparto {
+  font-family: var(--cine-dato);
+  font-size: 12px;
+  color: var(--cine-outline);
+}
+
+.tabla-boletos .rotulo-total {
+  text-align: right;
+  font-weight: 700;
+}
+
+.tabla-boletos .monto.total {
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--cine-primary);
+}
+
+/* En un telefono angosto la columna del precio sobra: el precio ya esta en el subtotal
+   cuando hay un solo boleto, y el contador necesita el ancho. */
+@media (max-width: 480px) {
+  .tabla-boletos thead th:nth-child(2),
+  .tabla-boletos tbody .precio {
+    display: none;
+  }
+
+  .tabla-boletos tbody th,
+  .tabla-boletos tbody td,
+  .tabla-boletos tfoot td {
+    padding: 10px 6px;
+  }
+
+  .tabla-boletos .numero {
+    width: 32px;
+  }
+}
+
+/* La nota que explica el precio cierra el bloque de la tabla. Abajo lleva bastante aire
+   para que se lea como parte de la tabla y no como el principio del formulario, que es
+   lo que viene despues. */
+.nota-descuento {
+  font-size: 13px;
+  color: var(--cine-outline);
+  margin: var(--cine-gutter) 0 calc(var(--cine-base) * 2.5);
+}
+
+.formulario-pago {
+  margin-top: calc(var(--cine-base) * 1.5);
+}
+
+/* El codigo es lo unico que el cliente se lleva: no hay boleto impreso (RF-10). Va en
+   monoespaciada y separado, para poder leerlo en voz alta o copiarlo a mano. */
+/* Solo la caja del código lleva el borde verde. Las otras fichas de esa misma pantalla
+   —la de la película, la de la reserva— siguen con el borde gris de siempre, para que el
+   verde señale una sola cosa: acá está lo que viniste a buscar. */
+.ficha-codigo {
+  border-color: var(--cine-seat-available);
+}
+
+/* El rótulo va en el mismo verde que el código: los dos son una sola pieza, y el rótulo
+   deja de leerse como un texto de apoyo suelto arriba (DISENO.md, "De qué color va el
+   código de confirmación"). */
+.rotulo-codigo {
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--cine-seat-available);
+  margin-bottom: 4px;
+}
+
+/* El codigo va en el mismo verde del asiento disponible, y no en el dorado de la marca:
+   en las dos pantallas ese verde significa "todo bien" (DISENO.md, "De que color va el
+   codigo de confirmacion"). Se toma de la variable y no del valor suelto, para que el
+   verde siga viviendo en un solo lugar. */
+.codigo-confirmacion {
+  font-family: var(--cine-dato);
+  font-weight: 700;
+  font-size: 34px;
+  letter-spacing: 0.12em;
+  color: var(--cine-seat-available);
+  margin: 0 0 var(--cine-gutter);
+  word-break: break-all;
+}
+
+@media (min-width: 480px) {
+  .codigo-confirmacion {
+    font-size: 44px;
+  }
+}
+
+/* Un asiento ya comprado no es uno que se este eligiendo: va en dorado y no en amarillo,
+   que en el mapa significa "lo estas eligiendo" (DISENO.md). */
+.pastilla-asiento.comprado {
+  background: var(--cine-primary);
+  color: var(--cine-on-primary);
+}
+
+.cuentas-compra {
+  margin: var(--cine-base) 0 0;
+}
+
+.cuentas-compra td {
+  padding: 8px 0;
+}
+
+.cuentas-compra .cuantos,
+.cuentas-compra .monto {
+  font-family: var(--cine-dato);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.cuentas-compra .cuantos {
+  color: var(--cine-outline);
+  font-size: 13px;
+}
+
+.cuentas-compra .renglon-total td {
+  border-top: 1px solid var(--cine-outline-variant);
+  font-weight: 700;
+}
+
+.cuentas-compra .renglon-total .monto {
+  color: var(--cine-primary);
+  font-size: 18px;
+}
+
+.datos-del-cliente {
+  margin-top: var(--cine-base);
+  font-size: 14px;
+  color: var(--cine-on-surface-variant);
 }

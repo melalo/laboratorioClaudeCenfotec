@@ -3,6 +3,7 @@
 // Todo lo que decide si un asiento esta libre u ocupado vive aca, para que el servidor
 // solo se ocupe de atender pedidos y armar pantallas.
 
+import { calcularBoletos, generarCodigo } from './precios.js';
 import { comoTextoInstante } from './semana.js';
 
 // El plazo de la reserva temporal (DISENO.md, "Otras decisiones"). Bajo de 5 a 3 minutos
@@ -18,6 +19,14 @@ export class ReservaRechazada extends Error {
   }
 }
 
+// Lo mismo, para el pago (vertical slice 3).
+export class PagoRechazado extends Error {
+  constructor(motivo) {
+    super(motivo);
+    this.motivo = motivo;
+  }
+}
+
 export function crearReservas(db) {
   const consultas = {
     // Marcar como vencidas las reservas que ya pasaron el plazo. Es lo que dice
@@ -27,14 +36,15 @@ export function crearReservas(db) {
        WHERE funcion_id = ? AND estado = 'reservada' AND creada_en <= ?`),
 
     // Los asientos que una funcion tiene tomados ahora mismo, con la compra que los tiene.
-    // Una reserva pasada de plazo no cuenta, aunque todavia nadie la haya marcado vencida:
-    // asi el asiento nunca queda bloqueado de mas. El vertical slice 3 sumara aca el
-    // estado 'pagada', que hasta entonces no existe.
+    // Son dos casos: una compra ya pagada, que no vence nunca, o una reserva que todavia
+    // esta dentro del plazo. Una reserva pasada de plazo no cuenta, aunque todavia nadie
+    // la haya marcado vencida: asi el asiento nunca queda bloqueado de mas.
     tomadosDeLaFuncion: db.prepare(`
-      SELECT ca.asiento_id, ca.compra_id
+      SELECT ca.asiento_id, ca.compra_id, c.estado
         FROM compras_asientos ca
         JOIN compras c ON c.id = ca.compra_id
-       WHERE c.funcion_id = ? AND c.estado = 'reservada' AND c.creada_en > ?`),
+       WHERE c.funcion_id = ?
+         AND (c.estado = 'pagada' OR (c.estado = 'reservada' AND c.creada_en > ?))`),
 
     asientosDeSala: db.prepare(`
       SELECT id, fila, numero, fila || numero AS codigo
@@ -56,6 +66,7 @@ export function crearReservas(db) {
     // escrita como texto, y asi no hay que volver a convertirla a fecha en JavaScript.
     reservaPorId: db.prepare(`
       SELECT c.id, c.estado, c.creada_en,
+             c.nombre, c.identificacion, c.estudiantes, c.total, c.codigo, c.metodo,
              datetime(c.creada_en, '+${MINUTOS_DE_RESERVA} minutes') AS vence,
              CAST((julianday(datetime(c.creada_en, '+${MINUTOS_DE_RESERVA} minutes'))
                    - julianday(?)) * 86400 AS INTEGER) AS segundos_restantes,
@@ -67,11 +78,44 @@ export function crearReservas(db) {
         JOIN salas s ON s.id = f.sala_id
        WHERE c.id = ?`),
 
+    // Los boletos de una compra: el asiento, y —si ya se pago— su descuento y su precio.
     asientosDeCompra: db.prepare(`
-      SELECT a.fila || a.numero AS codigo
+      SELECT ca.asiento_id, a.fila || a.numero AS codigo, ca.descuento, ca.precio
         FROM compras_asientos ca JOIN asientos a ON a.id = ca.asiento_id
        WHERE ca.compra_id = ? ORDER BY a.fila, a.numero`),
+
+    // --- El pago (vertical slice 3) ---
+
+    // Lo minimo para decidir si esta compra se puede pagar, leido dentro de la
+    // transaccion para que nada cambie entre la comprobacion y el cobro.
+    compraParaPagar: db.prepare(`
+      SELECT c.id, c.estado, c.creada_en, f.fecha_hora
+        FROM compras c JOIN funciones f ON f.id = c.funcion_id
+       WHERE c.id = ?`),
+
+    ponerPrecioAlBoleto: db.prepare(`
+      UPDATE compras_asientos SET descuento = ?, precio = ?
+       WHERE compra_id = ? AND asiento_id = ?`),
+
+    marcarPagada: db.prepare(`
+      UPDATE compras
+         SET estado = 'pagada', nombre = ?, identificacion = ?, estudiantes = ?,
+             total = ?, codigo = ?, metodo = ?
+       WHERE id = ? AND estado = 'reservada'`),
+
+    compraPorCodigo: db.prepare('SELECT id FROM compras WHERE codigo = ?'),
   };
+
+  // Un codigo de confirmacion que todavia no tenga nadie. La base ademas tiene un indice
+  // unico, asi que si dos compras simultaneas sacaran el mismo, la segunda fallaria en
+  // vez de pisar a la primera.
+  function codigoLibre() {
+    for (let intento = 0; intento < 20; intento++) {
+      const codigo = generarCodigo();
+      if (!consultas.compraPorCodigo.get(codigo)) return codigo;
+    }
+    throw new PagoRechazado('SIN_CODIGO_LIBRE');
+  }
 
   // El instante a partir del cual una reserva sigue viva: todo lo creado antes vencio.
   function limiteDeVigencia(ahora) {
@@ -84,11 +128,13 @@ export function crearReservas(db) {
       consultas.vencerPasadasDePlazo.run(funcionId, limiteDeVigencia(ahora));
     },
 
-    // Que asiento tiene tomado cual compra, en esta funcion y en este momento.
+    // Que asiento tiene tomado cual compra, en esta funcion y en este momento, y si esa
+    // compra esta reservada o ya pagada. El estado importa para el color: el amarillo es
+    // "lo estas eligiendo", y una compra pagada ya no se elige (DISENO.md).
     ocupacionDe(funcionId, ahora) {
       const tomados = new Map();
       for (const fila of consultas.tomadosDeLaFuncion.all(funcionId, limiteDeVigencia(ahora))) {
-        tomados.set(fila.asiento_id, fila.compra_id);
+        tomados.set(fila.asiento_id, { compraId: fila.compra_id, estado: fila.estado });
       }
       return tomados;
     },
@@ -135,15 +181,77 @@ export function crearReservas(db) {
       }
     },
 
-    // La reserva con todo lo que la pantalla necesita, o null si esa compra no existe.
+    // La reserva —o la compra ya pagada— con todo lo que la pantalla necesita, o null si
+    // esa compra no existe.
     reservaPorId(compraId, ahora) {
       const reserva = consultas.reservaPorId.get(comoTextoInstante(ahora), compraId);
       if (!reserva) return null;
+      const boletos = consultas.asientosDeCompra.all(compraId);
       return {
         ...reserva,
-        asientos: consultas.asientosDeCompra.all(compraId).map((a) => a.codigo),
+        boletos,
+        asientos: boletos.map((b) => b.codigo),
+        pagada: reserva.estado === 'pagada',
         vigente: reserva.estado === 'reservada' && reserva.segundos_restantes > 0,
       };
+    },
+
+    // El pago simulado (RF-9): la compra pasa de "reservada" a "pagada" y recibe su
+    // codigo de confirmacion, sin conectarse a ningun medio de pago real.
+    //
+    // Va entero dentro de una transaccion, igual que la reserva: entre comprobar que la
+    // reserva sigue viva y cobrarla no se puede colar otro pedido. Sin eso, una reserva
+    // que vence en ese instante podria pagarse igual, y el asiento quedaria vendido dos
+    // veces (DISENO.md, "Otras decisiones").
+    pagar({ compraId, nombre, identificacion, estudiantes, metodo, tarifas, ahora }) {
+      const limite = limiteDeVigencia(ahora);
+
+      db.exec('BEGIN IMMEDIATE');
+      try {
+        const compra = consultas.compraParaPagar.get(compraId);
+        if (!compra) throw new PagoRechazado('NO_EXISTE');
+
+        // Pagar dos veces la misma compra no la cobra dos veces: la primera ya la dejo
+        // pagada, y volver a intentarlo simplemente no cambia nada.
+        if (compra.estado === 'pagada') {
+          db.exec('COMMIT');
+          return { yaEstabaPagada: true };
+        }
+
+        if (compra.estado !== 'reservada' || compra.creada_en <= limite) {
+          throw new PagoRechazado('RESERVA_VENCIDA');
+        }
+
+        const asientos = consultas.asientosDeCompra.all(compraId);
+        if (estudiantes > asientos.length) throw new PagoRechazado('DEMASIADOS_ESTUDIANTES');
+
+        const { boletos, total } = calcularBoletos({
+          fechaHora: compra.fecha_hora,
+          codigos: asientos.map((a) => a.codigo),
+          estudiantes,
+          tarifas,
+        });
+
+        // calcularBoletos devuelve los boletos en el mismo orden en que se le pasaron,
+        // asi que la posicion alcanza para saber a que asiento corresponde cada precio.
+        boletos.forEach((boleto, posicion) => {
+          consultas.ponerPrecioAlBoleto.run(
+            boleto.descuento,
+            boleto.precio,
+            compraId,
+            asientos[posicion].asiento_id,
+          );
+        });
+
+        const codigo = codigoLibre();
+        consultas.marcarPagada.run(nombre, identificacion, estudiantes, total, codigo, metodo, compraId);
+
+        db.exec('COMMIT');
+        return { codigo, total, boletos };
+      } catch (falla) {
+        db.exec('ROLLBACK');
+        throw falla;
+      }
     },
   };
 }

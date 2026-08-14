@@ -1,6 +1,7 @@
 // Las pantallas. Son HTML simple armado con texto, servido por el mismo servidor,
 // sin herramientas de compilacion (DISENO.md, "Otras decisiones").
 
+import { enColones } from './precios.js';
 import { fechaLegible, partesDelDia } from './semana.js';
 
 // Todo lo que viene de afuera (nombres de peliculas, usuarios) pasa por aca antes de
@@ -43,7 +44,10 @@ export function pagina({ titulo, contenido, cuenta = null }) {
 <body>
   <header class="container">
     <nav>
-      <ul><li><a href="/" class="marca"><strong>Cine Variedades</strong></a></li></ul>
+      <ul><li><a href="/" class="marca">
+        <img class="logo" src="/images/logo.webp" alt="" width="96" height="62">
+        <strong>Cine Variedades</strong>
+      </a></li></ul>
       <ul>${sesion}</ul>
     </nav>
   </header>
@@ -63,7 +67,6 @@ export function pagina({ titulo, contenido, cuenta = null }) {
       </div>
       <div class="pie-acceso">${acceso}</div>
     </div>
-    <p class="pie-nota">Prototipo del Caso práctico 4 · Datos inventados · El pago es simulado</p>
   </footer>
 </body>
 </html>
@@ -210,9 +213,165 @@ export function mapaDeAsientos({ funcion, filas, errores = [] }) {
   return pagina({ titulo: funcion.pelicula, contenido });
 }
 
-// La pantalla de la reserva. Es donde el vertical slice 3 va a colgar el pago
-// (DISENO.md, "Otras decisiones").
-export function pantallaReserva({ reserva, minutosDePlazo }) {
+// Como se llama en pantalla cada uno de los tres descuentos posibles (RN-2, RN-3).
+const ETIQUETA_DESCUENTO = {
+  ninguno: 'Precio normal',
+  miercoles: 'Miércoles, mitad de precio',
+  estudiante: 'Estudiante, 30% menos',
+};
+
+// Un botón − o + del contador. Es un botón de envío de verdad, con su propia dirección:
+// sin JavaScript recarga la pantalla con el reparto nuevo, y con JavaScript el clic se
+// ataja antes de que eso pase (DISENO.md, "Si las pantallas pueden usar JavaScript").
+function botonDelContador({ compraId, ajuste, signo, etiqueta }) {
+  return `<button type="submit" class="paso" formaction="/reservas/${compraId}/ajustar"
+      name="ajuste" value="${ajuste}" data-ajuste="${ajuste}"
+      aria-label="${escapar(etiqueta)}">${signo}</button>`;
+}
+
+// La tabla de tipos de boleto: una fila por tipo, con su precio, su cantidad y su
+// subtotal, y el total abajo. Las dos cantidades siempre suman los asientos reservados,
+// porque esos ya se eligieron en el mapa: la tabla los **reparte**, no los agrega
+// (DISENO.md, "Cómo se muestra y se elige el reparto...").
+function tablaDeBoletos({ compraId, tabla }) {
+  const regulares = tabla.asientos - tabla.estudiantes;
+
+  const encabezado = `<thead>
+        <tr><th>Tipo</th><th>Precio</th><th>Cantidad</th><th>Subtotal</th></tr>
+      </thead>`;
+
+  const pie = (leyenda, total) => `<tfoot>
+        <tr>
+          <td colspan="2" class="reparto">${escapar(leyenda)}</td>
+          <td class="rotulo-total">Total</td>
+          <td class="monto total" data-total>${escapar(enColones(total))}</td>
+        </tr>
+      </tfoot>`;
+
+  // Cuando declarar estudiantes no cambiaría ningún precio —los miércoles, porque el 50%
+  // le gana al 30% en todos los boletos (RN-4)— no hay nada que repartir: la tabla queda
+  // con una sola fila y sin contador, para no invitar a elegir algo que no cambia nada
+  // (DISENO.md, "Qué muestra la tabla cuando declarar estudiantes no cambiaría el precio").
+  if (!hayQueRepartir(tabla)) {
+    const precio = tabla.regular.precio;
+    const nombre = tabla.regular.descuento === 'miercoles' ? 'Entrada · miércoles' : 'Entrada';
+    return `
+    <table class="tabla-boletos">
+      ${encabezado}
+      <tbody>
+        <tr>
+          <th scope="row">${escapar(nombre)}</th>
+          <td class="precio">${escapar(enColones(precio))}</td>
+          <td class="cantidad"><span class="numero">${tabla.asientos}</span></td>
+          <td class="monto">${escapar(enColones(tabla.asientos * precio))}</td>
+        </tr>
+      </tbody>
+      ${pie(`${tabla.asientos} ${tabla.asientos === 1 ? 'asiento' : 'asientos'}`, tabla.asientos * precio)}
+    </table>
+    <input type="hidden" name="estudiantes" value="0">`;
+  }
+
+  const fila = ({ tipo, nombre, precio, cantidad, campo }) => `
+      <tr>
+        <th scope="row">${escapar(nombre)}</th>
+        <td class="precio">${escapar(enColones(precio))}</td>
+        <td class="cantidad">
+          ${botonDelContador({ compraId, ajuste: tipo === 'estudiante' ? -1 : 1, signo: '−', etiqueta: `Un ${nombre} menos` })}
+          ${campo}
+          ${botonDelContador({ compraId, ajuste: tipo === 'estudiante' ? 1 : -1, signo: '+', etiqueta: `Un ${nombre} más` })}
+        </td>
+        <td class="monto" data-subtotal="${tipo}">${escapar(enColones(cantidad * precio))}</td>
+      </tr>`;
+
+  // La cantidad de estudiantes es el único número que viaja al servidor; la de regulares
+  // sale de restarla, así que se muestra como texto y no como campo.
+  const campoEstudiantes = `<input type="number" name="estudiantes" class="numero"
+      value="${tabla.estudiantes}" min="0" max="${tabla.asientos}" step="1"
+      inputmode="numeric" aria-label="Cuántos boletos de estudiante">`;
+  const numeroRegulares = `<span class="numero" data-numero="regular">${regulares}</span>`;
+
+  return `
+    <table class="tabla-boletos" data-tabla-boletos
+           data-asientos="${tabla.asientos}"
+           data-precio-regular="${tabla.regular.precio}"
+           data-precio-estudiante="${tabla.estudiante.precio}">
+      ${encabezado}
+      <tbody>
+        ${fila({ tipo: 'regular', nombre: 'Entrada regular', precio: tabla.regular.precio, cantidad: regulares, campo: numeroRegulares })}
+        ${fila({ tipo: 'estudiante', nombre: 'Estudiante', precio: tabla.estudiante.precio, cantidad: tabla.estudiantes, campo: campoEstudiantes })}
+      </tbody>
+      ${pie(
+        `${tabla.asientos} de ${tabla.asientos} asientos repartidos`,
+        regulares * tabla.regular.precio + tabla.estudiantes * tabla.estudiante.precio,
+      )}
+    </table>`;
+}
+
+// ¿Tiene sentido preguntar cuántos boletos son de estudiante? Solo si ese descuento
+// cambiaría algún precio. La pregunta se hace así, y no "¿es miércoles?", para que la
+// pantalla siga siendo correcta si alguna vez se ajustan los porcentajes en config.json.
+function hayQueRepartir(tabla) {
+  return tabla.estudiante.precio < tabla.regular.precio;
+}
+
+// El contador, del lado del navegador. La pantalla funciona igual sin esto —cada botón
+// es un envío que el servidor recalcula—: lo único que agrega es evitar la recarga.
+// Ningún precio se decide acá: el servidor los vuelve a calcular al cobrar.
+const GUION_DEL_CONTADOR = `
+<script>
+(function () {
+  var tabla = document.querySelector('[data-tabla-boletos]');
+  if (!tabla) return;
+  var campo = tabla.querySelector('[name="estudiantes"]');
+  var asientos = Number(tabla.dataset.asientos);
+  var precios = {
+    regular: Number(tabla.dataset.precioRegular),
+    estudiante: Number(tabla.dataset.precioEstudiante)
+  };
+
+  function enColones(monto) {
+    return '₡' + String(monto).replace(/\\B(?=(\\d{3})+$)/g, '.');
+  }
+
+  function dibujar() {
+    var estudiantes = Math.min(asientos, Math.max(0, Number(campo.value) || 0));
+    campo.value = estudiantes;
+    var cantidades = { estudiante: estudiantes, regular: asientos - estudiantes };
+    var total = 0;
+    ['regular', 'estudiante'].forEach(function (tipo) {
+      var subtotal = cantidades[tipo] * precios[tipo];
+      total += subtotal;
+      var numero = tabla.querySelector('[data-numero="' + tipo + '"]');
+      if (numero) numero.textContent = cantidades[tipo];
+      tabla.querySelector('[data-subtotal="' + tipo + '"]').textContent = enColones(subtotal);
+    });
+    // El total aparece dos veces: al pie de la tabla y dentro del boton de pagar.
+    Array.prototype.forEach.call(document.querySelectorAll('[data-total]'), function (donde) {
+      donde.textContent = enColones(total);
+    });
+
+    // Se apaga el boton que se pasaria del limite, en vez de dejar que no haga nada.
+    Array.prototype.forEach.call(tabla.querySelectorAll('[data-ajuste]'), function (boton) {
+      var destino = estudiantes + Number(boton.dataset.ajuste);
+      boton.disabled = destino < 0 || destino > asientos;
+    });
+  }
+
+  tabla.addEventListener('click', function (evento) {
+    var boton = evento.target.closest('[data-ajuste]');
+    if (!boton) return;
+    evento.preventDefault(); // sin esto, el boton enviaria el formulario y recargaria
+    campo.value = (Number(campo.value) || 0) + Number(boton.dataset.ajuste);
+    dibujar();
+  });
+  tabla.addEventListener('input', dibujar);
+  dibujar();
+})();
+</script>`;
+
+// La pantalla de la reserva: la película, los asientos, cuánto queda de plazo, y el
+// formulario del pago (DISENO.md, "Qué ve el cliente inmediatamente después de reservar").
+export function pantallaReserva({ reserva, minutosDePlazo, tabla = null, errores = [], formulario = {} }) {
   const volverAlMapa = `<p><a href="/funciones/${reserva.funcion_id}/asientos">← Volver al mapa de asientos</a></p>`;
 
   if (!reserva.vigente) {
@@ -237,6 +396,15 @@ export function pantallaReserva({ reserva, minutosDePlazo }) {
       <span style="animation-duration: ${plazoEnSegundos}s; animation-delay: -${transcurridos}s"></span>
     </div>`;
 
+  // Cuando no hay nada que repartir hay que decir por qué, o la fila única parece un
+  // error. El caso real es el miércoles: la mitad de precio le gana al 30% (RN-4).
+  const explicacion = !hayQueRepartir(tabla)
+    ? `<p class="nota-descuento">Miércoles: todos los boletos pagan la mitad del boleto regular.</p>`
+    : `<p class="nota-descuento">Carné de estudiante se debe presentar a la entrada.</p>`;
+
+  const totalActual =
+    (tabla.asientos - tabla.estudiantes) * tabla.regular.precio + tabla.estudiantes * tabla.estudiante.precio;
+
   const contenido = `
     <article class="ficha-reserva">
       <h3>${escapar(reserva.pelicula)}</h3>
@@ -252,13 +420,90 @@ export function pantallaReserva({ reserva, minutosDePlazo }) {
          Si no se paga antes, vuelven a quedar libres.</p>
       ${barra}
     </article>
-    <p><button disabled>Continuar al pago</button></p>
-    <p><small>El pago se construye en el vertical slice 3; por ahora toda reserva vence
-       a los ${minutosDePlazo} minutos porque todavía no hay forma de pagarla (PLAN.md).</small></p>
+
+    ${avisos(errores)}
+
+    <form method="post" action="/reservas/${reserva.id}/pagar" class="formulario-pago">
+      ${tablaDeBoletos({ compraId: reserva.id, tabla })}
+      ${explicacion}
+
+      <label>Nombre completo
+        <input name="nombre" value="${escapar(formulario.nombre ?? '')}" maxlength="120"
+               autocomplete="name" required>
+      </label>
+      <label>Número de identificación
+        <input name="identificacion" value="${escapar(formulario.identificacion ?? '')}" maxlength="40"
+               required>
+        <small>Cédula, pasaporte o el documento que traigas. Sirve para recuperar tu compra
+           en taquilla si perdés el código.</small>
+      </label>
+
+      <button type="submit">Pagar <span data-total>${escapar(enColones(totalActual))}</span></button>
+    </form>
     ${volverAlMapa}
+    ${hayQueRepartir(tabla) ? GUION_DEL_CONTADOR : ''}
   `;
 
   return pagina({ titulo: 'Reserva tomada', contenido });
+}
+
+// La compra ya pagada: el código de confirmación (RF-10). Es la única copia que el
+// cliente tiene, porque no hay boleto impreso, así que esta pantalla se puede volver a
+// abrir cuantas veces quiera. Una compra pagada es final (RN-13): acá no hay forma de
+// deshacerla.
+export function pantallaCompraConfirmada({ compra, renglones }) {
+  const cuentas = renglones
+    .map(
+      (r) => `<tr>
+          <td>${escapar(ETIQUETA_DESCUENTO[r.descuento] ?? r.descuento)}</td>
+          <td class="cuantos">${r.cuantos} × ${escapar(enColones(r.precio))}</td>
+          <td class="monto">${escapar(enColones(r.cuantos * r.precio))}</td>
+        </tr>`,
+    )
+    .join('');
+
+  const contenido = `
+    <article class="ficha-reserva ficha-codigo">
+      <p class="rotulo-codigo">Tu código de confirmación</p>
+      <p class="codigo-confirmacion">${escapar(compra.codigo)}</p>
+      <p><small>Mostralo al entrar a la sala. No hay boleto impreso: esta pantalla es tu
+         comprobante.</small></p>
+    </article>
+
+    <article class="ficha-reserva">
+      <h3>${escapar(compra.pelicula)}</h3>
+      <p class="ficha-funcion">
+        <strong>${escapar(compra.sala)}</strong> ·
+        ${escapar(fechaLegible(compra.fecha_hora))} ·
+        ${escapar(conMayuscula(compra.formato))}
+      </p>
+      <p class="asientos-reservados">
+        ${compra.asientos.map((a) => `<span class="pastilla-asiento comprado">${escapar(a)}</span>`).join('')}
+      </p>
+
+      <table class="cuentas-compra">
+        <tbody>
+          ${cuentas}
+          <tr class="renglon-total">
+            <td>Total pagado</td>
+            <td class="cuantos">${compra.asientos.length} ${compra.asientos.length === 1 ? 'boleto' : 'boletos'}</td>
+            <td class="monto">${escapar(enColones(compra.total))}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p class="datos-del-cliente">
+        A nombre de <strong>${escapar(compra.nombre)}</strong>,
+        identificación <span class="dato">${escapar(compra.identificacion)}</span>.
+      </p>
+    </article>
+
+    <p><small>Si perdés este código, en la taquilla del cine lo recuperan con tu
+       identificación.</small></p>
+    <p><a href="/">← Volver a la cartelera</a></p>
+  `;
+
+  return pagina({ titulo: 'Compra confirmada', contenido });
 }
 
 // --- Personal --------------------------------------------------------------

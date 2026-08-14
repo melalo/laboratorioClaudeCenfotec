@@ -47,9 +47,13 @@ completo el cuaderno y el mapa de asientos en papel que se usan hoy.
    sala o la película.
 2. RN-2: Los miércoles, el precio del boleto es la mitad del precio base.
 3. RN-3: Existe un descuento del 30% sobre el precio base para estudiantes con carné vigente.
-   (Valor temporal para este ejercicio; puede ajustarse más adelante sin cambiar la regla.)
-4. RN-4: Si una compra califica para el descuento de miércoles y el de estudiante a la vez, se
-   aplica solo el mayor de los dos — no se acumulan.
+   (Valor temporal para este ejercicio; puede ajustarse más adelante sin cambiar la regla.) El
+   descuento es **por boleto, no por compra**: una compra de varios asientos lleva el descuento en
+   tantos boletos como estudiantes haya, y los demás pagan precio normal.
+4. RN-4: Si un boleto califica para el descuento de miércoles y el de estudiante a la vez, se
+   aplica solo el mayor de los dos — no se acumulan. Como el de miércoles (50%) es siempre mayor
+   que el de estudiante (30%), un miércoles todos los boletos de la función pagan la mitad, sean
+   de estudiante o no.
 5. RN-5: La validez del carné de estudiante se verifica al entrar a la sala, no al momento de la
    compra. Si no es válido, se cobra la diferencia en ese momento o se niega la entrada.
 6. RN-6: Cada asiento de una función solo puede estar reservado o vendido a una persona a la vez.
@@ -76,9 +80,12 @@ completo el cuaderno y el mapa de asientos en papel que se usan hoy.
     cuatro funciones diarias.
 
 ## Qué queda registrado
-1. REG-1: De cada compra: la función, el o los asientos, el método de compra (en línea o
-   taquilla), si se aplicó un descuento y cuál, el precio pagado, si el cliente se declaró
-   estudiante, y el nombre y número de identificación del cliente.
+1. REG-1: De cada compra: la función, el método de compra (en línea o taquilla), el nombre y
+   número de identificación del cliente, cuántos boletos declaró como de estudiante, y el total
+   pagado. Y **de cada boleto** de esa compra: su asiento, qué descuento se le aplicó (ninguno,
+   miércoles o estudiante) y el precio que se pagó por él. El descuento y el precio se guardan
+   por boleto, y no por compra, porque una misma compra puede llevar boletos de estudiante y
+   boletos sin descuento (RN-3, RF-5).
 2. REG-2: De cada función: película, sala, fecha y hora, si es doblada o subtitulada, y si fue
    cancelada.
 3. REG-3: Con lo anterior se puede contestar: boletos vendidos por película por mes, ocupación
@@ -98,7 +105,8 @@ completo el cuaderno y el mapa de asientos en papel que se usan hoy.
 2. Elige una función.
 3. Ve el mapa de asientos de la sala y elige uno o más asientos disponibles; quedan reservados
    temporalmente.
-4. Indica su nombre y número de identificación, y declara si es estudiante, si corresponde.
+4. Indica su nombre y número de identificación, y declara cuántos de sus asientos son de
+   estudiante, si corresponde.
 5. Paga (simulado).
 6. Recibe un código de confirmación en la pantalla de su teléfono.
 7. El día de la función, muestra el código al entrar (y el carné, si declaró ser estudiante).
@@ -127,24 +135,30 @@ plazo de reserva. El sistema libera esos asientos, que vuelven a estar disponibl
 conserva el registro de quiénes compraron boleto para ella, para que taquilla pueda identificar
 a quién reembolsar. La devolución en sí (efectivo o vale) ocurre fuera del sistema.
 
-**Carné de estudiante inválido al entrar:** el cliente se declaró estudiante al pagar, pero no
-presenta un carné válido al entrar. Se le cobra la diferencia en ese momento, o se le niega la
-entrada (RN-5).
+**Carné de estudiante inválido al entrar:** la compra declaró uno o más boletos de estudiante,
+pero quien llega no presenta un carné válido. Se le cobra la diferencia en ese momento, o se le
+niega la entrada (RN-5). Es también lo que ocurre si alguien declaró más boletos de estudiante de
+los que puede respaldar: el sistema no lo vigila al comprar, porque la puerta ya lo resuelve.
 
 ## Requisitos funcionales
 1. RF-1: El sistema muestra la cartelera de la semana vigente **un día a la vez**: el cliente
-   elige el día en una lista desplegable y, para ese día, ve cada sala —con cuántos asientos
-   tiene—, la película que proyecta —con su afiche—, sus horarios, y si cada función es doblada o
-   subtitulada. Una semana tiene decenas de funciones (RN-15 y glosario "Cartelera"): mostrarlas
-   todas juntas sería ilegible.
+   elige el día en una fila con los siete días de la semana, todos a la vista, y para ese día ve
+   cada sala —con cuántos asientos tiene—, la película que proyecta —con su afiche—, sus horarios,
+   y si cada función es doblada o subtitulada. Una semana tiene decenas de funciones (RN-15 y
+   glosario "Cartelera"): mostrarlas todas juntas sería ilegible. *(Corregido al construir el
+   vertical slice 3: este requisito todavía decía "lista desplegable", que fue la primera forma
+   construida en el vertical slice 1 y quedó reemplazada por la fila de días antes de cerrarlo.
+   `DISENO.md` y `PLAN.md` ya lo decían bien.)*
 2. RF-2: El sistema muestra el mapa de asientos de una función, indicando cuáles están
    disponibles, reservados temporalmente o vendidos.
 3. RF-3: El cliente puede elegir uno o más asientos disponibles de una función; quedan reservados
    temporalmente al elegirlos.
 4. RF-4: Si el pago no se completa dentro de un plazo desde la reserva, el sistema libera los
    asientos automáticamente.
-5. RF-5: El cliente puede declarar si es estudiante al momento de comprar, para que se le
-   aplique el descuento correspondiente.
+5. RF-5: El cliente declara, al momento de comprar, **cuántos de los asientos que está comprando
+   son de estudiante**, para que a esos boletos se les aplique el descuento (RN-3). Puede ser
+   ninguno, algunos o todos. El sistema no pide ni guarda el número de carné: la validez se
+   verifica en la puerta de la sala (RN-5).
 6. RF-6: El sistema le pide al cliente su nombre y número de identificación al momento de
    comprar, sin que esto cree una cuenta.
 7. RF-7: El personal puede buscar una compra por el nombre o número de identificación del

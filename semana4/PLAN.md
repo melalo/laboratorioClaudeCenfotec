@@ -38,7 +38,7 @@ por el mismo servidor, sin herramientas de compilación adicionales; base de dat
 |---|---|---|---|
 | 1 | Cartelera y mapa de asientos | — | **cerrado** (13 ago 2026) |
 | 2 | Reserva temporal de asiento | 1 | **cerrado** (14 ago 2026) |
-| 3 | Compra en línea completa | 2 | pendiente |
+| 3 | Compra en línea completa | 2 | **cerrado** (14 ago 2026) |
 | 4 | Venta en taquilla | 3 | pendiente |
 | 5 | Código perdido | 3 | pendiente |
 | 6 | Cancelar función | 1, 3, 4 | pendiente |
@@ -357,6 +357,20 @@ sola, hecha con una animación de CSS**, acompañada de la hora exacta de vencim
 dos juntos dan lo mismo que el conteo, y hay una comprobación que fija que esa pantalla no traiga
 ninguna etiqueta `<script>`.
 
+> **Corregido al construir el vertical slice 3 (14 ago, tarde).** El argumento de este párrafo
+> —"el prototipo no usa una sola línea de JavaScript"— resultó estar **mal fundado**: al buscarlo
+> se vio que esa regla no la pide la consigna ni `PROMPT.md`, y que la decisión escrita en
+> `DISENO.md` solo dice "HTML simple, **sin herramientas de compilación**", que no es lo mismo. La
+> regla se había estirado sola y llegó a descartar algo que la estudiante había pedido. Al
+> permitirse JavaScript en la página, se le volvió a preguntar, y decidió **conservar la barra**:
+> el vertical slice 2 ya estaba cerrado y la barra cumple. La barra **no cambió en nada**. Lo que
+> sí cambió es la comprobación: dejó de exigir que la pantalla entera no traiga `<script>`, porque
+> el vertical slice 3 puso ahí la tabla de tipos de boleto con su contador. Ahora comprueba lo que
+> de verdad importa de esta pieza — que la duración de la animación la escriba el servidor y que
+> nada de JavaScript mueva la barra. Es el mismo tipo de ajuste que este slice le hizo al vertical
+> slice 1 con la leyenda de tres estados, y por la misma razón: no es una regresión, es una
+> afirmación que dejó de ser cierta.
+
 *Decisiones nuevas, escritas en `DISENO.md` antes de construir.* Ninguna estaba resuelta en los
 documentos, así que ninguna se dio por supuesta: el mapa como formulario de casillas de
 verificación en vez de enlaces; la pantalla propia de la reserva —donde el vertical slice 3 colgará
@@ -394,35 +408,74 @@ un servidor propio en un puerto libre. Es la segunda vez que aparece este proble
 ### Vertical slice 3: Compra en línea completa
 **Qué tiene que ser cierto**
 - Después de reservar asiento(s) (vertical slice 2), el cliente indica su nombre y número de
-  identificación (RF-6), sin que esto cree una cuenta (RN-14).
-- El cliente puede declarar si es estudiante (RF-5).
-- El precio base y los dos porcentajes de descuento (50% de miércoles, 30% de estudiante) se leen
-  de la configuración de la aplicación, no están escritos dentro de la regla ni guardados en la
-  base de datos (`DISENO.md` → "Otras decisiones").
-- El sistema calcula el precio de cada asiento: precio base; mitad del precio base si la función
-  es un miércoles (RN-2); 30% de descuento si declaró estudiante (RN-3); si ambos aplican, solo
-  el mayor de los dos, sin acumular (RN-4, RF-8).
+  identificación (RF-6), sin que esto cree una cuenta (RN-14). Ninguno de los dos puede quedar
+  vacío; no se les exige ningún formato (`DISENO.md` → "Otras decisiones").
+- El cliente declara **cuántos** de los asientos que reservó son de estudiante: un número de 0 a
+  la cantidad de asientos (RF-5). Si declara más de los que reservó, el sistema no lo acepta.
+- El precio base (₡4.000) y los dos porcentajes de descuento (50% de miércoles, 30% de
+  estudiante) se leen de la configuración de la aplicación, no están escritos dentro de la regla
+  ni guardados en la base de datos (`DISENO.md` → "Otras decisiones").
+- El sistema calcula el precio de **cada boleto**: precio base; mitad del precio base si la
+  función es un miércoles (RN-2); 30% de descuento en tantos boletos como estudiantes haya
+  declarado (RN-3); si los dos descuentos le tocan al mismo boleto, solo el mayor, sin acumular
+  (RN-4, RF-8). El total de la compra es la suma de sus boletos.
+- Antes de pagar, el cliente ve el desglose en una **tabla de tipos de boleto** —"Entrada regular"
+  y "Estudiante"—, con el precio de cada tipo, cuántos boletos lleva y su subtotal, más el total
+  abajo. Las dos cantidades siempre suman los asientos reservados: subir una baja la otra, y no se
+  puede pasar del límite ni bajar de cero (`DISENO.md` → "Otras decisiones").
+- Cuando declarar estudiantes **no cambiaría ningún precio** —que es lo que pasa los miércoles,
+  porque el 50% le gana al 30% en todos los boletos (RN-4)—, la tabla se muestra con **una sola
+  fila y sin contador**, y un mensaje explica por qué. La compra queda registrada con 0 boletos de
+  estudiante, porque no se preguntó (`DISENO.md` → "Otras decisiones").
+- El precio que se cobra lo calcula **siempre el servidor**, sin creerle ningún número al
+  navegador: lo único que este manda es cuántos boletos de estudiante se declararon.
 - El cliente simula el pago; la compra pasa de "reservada" a "pagada" sin conectarse a ningún
   medio de pago real (RF-9).
-- Al confirmarse el pago, el sistema muestra en pantalla un código de confirmación con película,
-  sala, función y el o los asientos comprados (RF-10).
+- Al confirmarse el pago, el sistema muestra en pantalla un código de confirmación con la forma
+  `CV-XXXXXX`, con película, sala, función y el o los asientos comprados (RF-10).
+- Un asiento con una compra pagada deja de estar disponible **para siempre**: a diferencia de la
+  reserva, la compra pagada no vence (`DISENO.md` → "Otras decisiones").
+- Una compra pagada es final (RN-13): la pantalla no ofrece ninguna forma de cancelarla, y volver
+  a su dirección vuelve a mostrar el código, porque es la única copia que el cliente tiene.
 - Si pasaron más de 3 minutos entre reservar y pagar, la reserva ya venció (vertical slice 2) y
   el sistema no permite completar la compra sobre esos asientos — hay que elegir de nuevo.
 
 **Con qué se comprueba**
-- Reservar un asiento en una función de miércoles, pagar sin declararse estudiante, y verificar
-  que el precio cobrado es la mitad del precio base.
-- Reservar un asiento en una función que no es miércoles, declararse estudiante, pagar, y
-  verificar que el precio cobrado es el 70% del precio base y que la compra queda registrada con
-  descuento "estudiante".
-- Reservar un asiento en una función de miércoles, declararse estudiante, pagar, y verificar que
-  el precio cobrado es la mitad del precio base —el descuento de miércoles, que es el mayor de
-  los dos— y que la compra queda registrada con descuento "miércoles", no con los dos descuentos
-  sumados.
-- Completar una compra y verificar que en pantalla aparece un código de confirmación con
-  película, sala, función y asiento(s).
+- Reservar un asiento en una función de miércoles, pagar sin declarar estudiantes, y verificar
+  que el precio cobrado es la mitad del precio base (₡2.000).
+- Reservar un asiento en una función que no es miércoles, declararlo de estudiante, pagar, y
+  verificar que el precio cobrado es el 70% del precio base (₡2.800) y que ese boleto queda
+  registrado con descuento "estudiante".
+- Reservar un asiento en una función de miércoles, declararlo de estudiante, pagar, y verificar
+  que el precio cobrado es la mitad del precio base —el descuento de miércoles, que es el mayor
+  de los dos— y que el boleto queda registrado con descuento "miércoles", no con los dos
+  descuentos sumados.
+- Reservar **3 asientos** en una función que no es miércoles, declarar que **2** son de
+  estudiante, pagar, y verificar que el total es ₡9.600 (2 × ₡2.800 + 1 × ₡4.000) y que en la
+  base quedan dos boletos con descuento "estudiante" y uno con descuento "ninguno".
+- Reservar 2 asientos y declarar 3 estudiantes: verificar que el sistema no lo acepta y que la
+  compra sigue sin pagarse.
+- Intentar pagar sin nombre, y otra vez sin número de identificación: verificar que ninguna de
+  las dos completa la compra.
+- Completar una compra y verificar que en pantalla aparece un código de confirmación con la forma
+  `CV-XXXXXX` y con película, sala, función y asiento(s).
+- Cambiar el precio base en la configuración y verificar que la compra siguiente cobra el nuevo
+  precio — confirma que el precio no está escrito dentro del código.
 - Reservar un asiento, esperar más de 3 minutos, e intentar pagar: verificar que el sistema no lo
   permite e indica que hay que elegir de nuevo.
+- Pagar un asiento, dejar pasar más del plazo de la reserva, y volver a pedir el mapa: verificar
+  que ese asiento **sigue** sin estar disponible, y que otro cliente que intente reservarlo es
+  rechazado.
+- Volver a la dirección de una compra ya pagada y verificar que muestra otra vez el código, y que
+  no ofrece ninguna forma de cancelarla (RN-13).
+- Verificar que la tabla de tipos de boleto muestra las dos filas con su precio, que arranca con
+  todos los boletos como "entrada regular", y que el límite del contador es la cantidad de
+  asientos reservados.
+- Enviar a mano un pedido de pago con un total inventado y verificar que la compra queda con el
+  precio que calcula el servidor, no con el que mandó el navegador.
+- En una función de miércoles, verificar que la tabla tiene una sola fila, sin contador y sin
+  JavaScript, con el mensaje que explica por qué, y que al pagar la compra queda con 0 boletos de
+  estudiante y todos sus boletos con descuento "miércoles".
 
 **Toca**: Ventas (pago y confirmación).
 
@@ -430,12 +483,191 @@ un servidor propio en un puerto libre. Es la segunda vez que aparece este proble
 - Consume: la Compra en estado "reservada temporalmente" del vertical slice 2, y el archivo de
   configuración del vertical slice 1, al que este slice le agrega el precio base y los dos
   porcentajes de descuento.
-- Produce: la Compra en estado "pagada", con nombre e identificación del cliente, si declaró
-  estudiante, qué descuento se aplicó, el precio pagado, y el código de confirmación
-  (`DISENO.md` → "Modelo de datos", entidad Compra). Los vertical slices 4, 5, 6 y 7 leen estos
-  mismos campos.
+- Produce: la Compra en estado "pagada", con nombre e identificación del cliente, cuántos boletos
+  declaró de estudiante, el total pagado, el código de confirmación y el método de compra —"en
+  línea" en todas las de este slice, porque RN-8 lo exige de toda compra—; y cada uno de sus
+  Boletos, con el descuento que se le aplicó y el precio que se pagó por él (`DISENO.md` →
+  "Modelo de datos", entidades Compra y Boleto). Los vertical slices 4, 5, 6 y 7 leen estos
+  mismos campos. La cuenta vendedora queda para el vertical slice 4: una compra en línea no tiene.
 
-**Evidencia** *(vacía al escribir el plan; se llena al cerrar el slice, con fecha)*
+**Evidencia**
+
+*Cerrado el 14 de agosto de 2026.* `npm test` corre **94 comprobaciones automatizadas y pasan las
+94**: las 67 de los vertical slices 1 y 2 —una de ellas corregida, ver abajo— y **27 nuevas** en
+`cine/test/slice3.test.js`. Se escribieron antes del código: la primera corrida dio **21 fallando
+de 22** —la única que pasaba era la que exige que estas pantallas no traigan JavaScript, cierta de
+antemano porque no había ninguna línea en toda la aplicación—. Las tres restantes se agregaron
+después, cada una vista fallar primero, por lo que se cuenta más abajo. Todas levantan el servidor
+de verdad y una base SQLite de verdad en un archivo temporal.
+
+Comprobación por comprobación, como las pide este vertical slice:
+
+| Comprobación del plan | Cómo se corrió | Resultado |
+|---|---|---|
+| Miércoles sin estudiantes → la mitad | Automatizada, y a mano contra la aplicación en marcha | La compra queda en **₡2.000**, y el boleto guardado dice descuento `miercoles`. |
+| Día común, estudiante → el 70% | Automatizada, y a mano | **₡2.800**, boleto con descuento `estudiante`. |
+| Miércoles + estudiante → la mitad, no los dos sumados | Automatizada, y a mano | **₡2.000** y descuento `miercoles`. Los dos descuentos sumados darían ₡1.400: ese número no aparece nunca (RN-4). |
+| 3 asientos declarando 2 estudiantes | Automatizada, y a mano | Total **₡9.600**. En la base: `D5 estudiante 2800`, `D6 estudiante 2800`, `D7 ninguno 4000`. |
+| Declarar más estudiantes que asientos | Automatizada, y a mano (5 estudiantes sobre 2 asientos) | **400**, y la compra sigue en estado `reservada`. |
+| Pagar sin nombre, y sin identificación | Automatizada, y a mano | **400** las dos veces; la compra no se paga. |
+| Código de confirmación con película, sala, función y asientos | Automatizada, y a mano | En pantalla salió `CV-687Q2F`, con *Sombras en el puerto*, Sala 1, el día y la hora, y los tres asientos. El código que se ve es el mismo que quedó en la base. |
+| Cambiar el precio base en la configuración | Automatizada: se levanta la aplicación con precio base ₡5.000 | Un día común cobra **₡5.000** y un miércoles **₡2.500**. Confirma que el precio no está escrito dentro del código. |
+| Esperar más de 3 minutos e intentar pagar | Automatizada (retrocediendo 4 minutos la reserva en la base), y a mano | **409**, con el aviso de que la reserva venció. La compra no queda pagada. |
+| Un asiento pagado no vuelve a estar disponible | Automatizada (retrocediendo 60 minutos), y a mano (90 minutos) | Los asientos vendidos **siguen en gris** y el mapa muestra 117 disponibles de 120. Otro cliente que intenta tomar uno recibe **409**. |
+| Volver a la dirección de una compra pagada | Automatizada, y a mano | Devuelve **200** con el mismo código; no aparece la palabra "cancelar" en ninguna parte (RN-13). |
+
+*Comprobaciones nuevas más allá de las que el plan pedía:* que la compra guarde el método "en
+línea" y que comprar no cree ninguna cuenta (RN-8, RN-14); que nadie pueda pagar la reserva hecha
+desde otro navegador; que dos compras reciban códigos distintos; que pagar dos veces la misma
+compra no la cobre dos veces ni le cambie el código; que al propio comprador sus asientos ya
+pagados se le muestren en gris y no en amarillo; que ninguna de las dos pantallas traiga
+JavaScript; y que la compra pagada siga estando después de reiniciar el servidor.
+
+*La comprobación a mano, contra la aplicación en marcha.* Se levantó un servidor propio en un
+puerto libre y con base propia, como manda la nota de gobernanza del vertical slice 2, y se
+recorrió la compra entera. La tabla que el cliente ve **antes** de pagar, con 4 asientos
+reservados un día común y 2 declarados de estudiante:
+
+```
+Tipo               Precio      Cantidad       Subtotal
+------------------------------------------------------
+ENTRADA REGULAR    ₡4.000     [−]  2  [+]      ₡8.000
+ESTUDIANTE         ₡2.800     [−]  2  [+]      ₡5.600
+------------------------------------------------------
+4 de 4 asientos repartidos          TOTAL     ₡13.600
+```
+
+Y la misma tabla en una función de **miércoles**, donde declarar estudiantes no cambiaría ningún
+precio: queda con una sola fila, sin contador y —al no haber contador— sin nada de JavaScript.
+
+```
+Tipo                    Precio    Cantidad   Subtotal
+-----------------------------------------------------
+ENTRADA · MIÉRCOLES     ₡2.000        4       ₡8.000
+-----------------------------------------------------
+4 asientos                   TOTAL    ₡8.000
+
+"Miércoles: todos los boletos pagan la mitad del boleto regular."
+```
+
+*Por qué la fila única.* La primera versión mostraba las dos filas también los miércoles, con los
+dos contadores. La estudiante lo vio funcionando y señaló que era confuso: la pantalla invitaba a
+mover un contador que **no cambiaba ni un colón**, y eso hace dudar de si uno se equivocó. La
+condición para mostrar el reparto quedó escrita como "**el descuento de estudiante cambiaría algún
+precio**", y no como "es miércoles", para que la pantalla siga siendo correcta si alguna vez se
+ajustan los porcentajes en `config.json`. Quedó anotada además la consecuencia para el vertical
+slice 7: como esos días no se pregunta, toda compra de un miércoles se registra con **0 boletos de
+estudiante**, y eso significa "no se preguntó", no "no fueron estudiantes".
+
+*El contador funciona con y sin JavaScript, y se comprobaron las dos formas.* Cada `−` y cada `+`
+es un botón de envío de verdad, apuntado a `/reservas/:id/ajustar`. Enviándolos a mano, sin que
+corra nada en el navegador, el servidor recalculó y devolvió la pantalla con el reparto nuevo,
+conservando el nombre ya escrito: `1 estudiante → ₡14.800`, `3 estudiantes → ₡12.400`, y al pedir
+un quinto sobre 4 asientos **se quedó en 4** (`₡11.200`). Con JavaScript, el mismo clic se ataja
+antes de que eso pase y las cuentas se rehacen en la pantalla, sin recargar.
+
+*Y la compra que salió de esa tabla, tal como quedó en la base:*
+
+```
+compra 5: codigo CV-J2RJ9J, total 13600, estudiantes 2, metodo linea, estado pagada
+   boleto E5  estudiante   2800
+   boleto E6  estudiante   2800
+   boleto E7  ninguno      4000
+   boleto E8  ninguno      4000
+   suma de los boletos: 13600  (coincide con el total de la compra)
+```
+
+*Los tres datos que faltaban, y que se preguntaron en vez de inventarse.* Ninguno estaba escrito
+en `PROMPT.md`, ni en la consigna, ni en `ESPECIFICACION.md`, ni en `DISENO.md`. Los tres los
+decidió la estudiante y los tres quedaron en `DISENO.md` con su razón:
+
+- **Cuánto vale la entrada:** ₡4.000. RN-1 decía que hay un precio base, pero no cuál.
+- **Qué forma tiene el código de confirmación:** `CV-XXXXXX`, seis caracteres sin las letras y
+  números que se confunden al dictarlos. RF-10 exigía un código, pero no decía cómo se ve.
+- **A cuántos asientos alcanza el descuento de estudiante:** se pregunta **cuántos** son de
+  estudiante. Es la decisión que más consecuencias tuvo, y están abajo.
+
+*Lo que esa decisión obligó a corregir, antes de escribir una línea de código.* Si una compra
+puede llevar boletos de estudiante y boletos sin descuento, entonces el descuento y el precio ya
+no son datos de la compra:
+
+- `ESPECIFICACION.md`: **RF-5** pasó de "declarar **si** es estudiante" a "declarar **cuántos** de
+  sus asientos lo son"; **REG-1** pasó a registrar el descuento y el precio **por boleto**;
+  **RN-3** dice ahora que el descuento es por boleto y no por compra; y **RN-4** se reescribió en
+  términos de un boleto, agregando la consecuencia de que un miércoles todos pagan la mitad.
+- `DISENO.md`: apareció la entidad **Boleto** en el modelo de datos, con el asiento, su descuento
+  y su precio; la Compra se quedó con el total, cuántos estudiantes se declararon y el código.
+- `PLAN.md`: las condiciones y las comprobaciones de este slice se reescribieron antes de
+  construir, y se sumaron cinco comprobaciones que antes no existían.
+
+*La regla de "cero JavaScript" resultó no ser una decisión de nadie, y se corrigió.* Al ver la
+primera versión de esta pantalla —los repartos posibles como botones de opción, uno por línea— la
+estudiante trajo el ejemplo de una boletería de cine real y pidió una **tabla con contador**. Un
+contador que actualiza el subtotal al instante necesita JavaScript, así que se le presentó el
+choque con la regla. Ella preguntó de dónde salía esa regla, y al buscarla apareció que **no
+salía de ningún lado**:
+
+- `consigna-semana4.txt` **no la menciona**. Solo fija que la base sea un motor real, y que
+  *"cambiar una tecnología requiere actualizar primero `DISENO.md`, con la razón del cambio"*.
+- `PROMPT.md` **no la menciona**.
+- La decisión escrita en `DISENO.md` dice *"HTML simple, **sin herramientas de compilación**"*,
+  que **no es lo mismo**: unas líneas escritas dentro de la página no compilan nada.
+
+El "cero JavaScript" se había ido acumulando solo, de decisión en decisión, hasta descartar cosas
+que la estudiante había pedido —el contador ahora, y el conteo regresivo en el vertical slice 2—.
+Quedó escrita como decisión nueva: **JavaScript sí, dentro de la propia página, sin librerías ni
+herramientas de compilación**, y con una frontera que sí importa y se mantiene entera: *el
+navegador nunca decide nada que importe*. El precio, la disponibilidad y el vencimiento los
+resuelve siempre el servidor. Hay una comprobación que lo fija: manda un pago con `total=1`,
+`precio=1` y `descuento=estudiante` inventados, y verifica que la compra queda en **₡6.800**, que
+es lo que corresponde.
+
+*Y se usó lo mínimo.* El permiso se aplicó **solo** a la tabla. Los siete días en fila y el mapa
+de asientos con casillas se quedan como están, porque se eligieron por razones propias que nunca
+dependieron de esta regla. La barra del plazo también se queda: se le volvió a preguntar a la
+estudiante, que era quien había pedido el conteo con números, y decidió no reabrir un slice ya
+cerrado por eso. La pantalla de confirmación **no lleva nada de JavaScript**, y hay una
+comprobación que lo fija: es el único comprobante del cliente y no puede depender de que el
+navegador ejecute algo.
+
+*El contador está construido para funcionar sin JavaScript también.* Cada `−` y `+` es un botón de
+envío de verdad, con su propia dirección (`/reservas/:id/ajustar`): si el navegador no ejecuta
+nada, el servidor recalcula y devuelve la pantalla. El JavaScript solo ataja el clic para evitar
+la recarga. No hay ningún botón que quede muerto.
+
+*Ocho decisiones nuevas en `DISENO.md`, escritas antes de construir.* El precio base y la moneda;
+cómo se declaran los estudiantes; a qué boletos va el descuento cuando no alcanza para todos (a
+los más caros primero, que hoy no cambia ningún total pero deja la respuesta fijada); el redondeo
+al colón; la forma del código de confirmación; qué pasa al volver a una compra ya pagada; qué se
+valida del nombre y la identificación; que la disponibilidad ahora cuente también las compras
+pagadas; y dónde vive la entidad Boleto en la base. Más tres que aparecieron al revisar la
+pantalla ya construida: que este slice guarde el método de compra "en línea" —RN-8 lo exige de
+toda compra, y dejarlo vacío obligaría al vertical slice 7 a adivinar—; que las pantallas puedan
+usar JavaScript, con su frontera; y que el reparto entre tipos de boleto se elija con la tabla y
+su contador, en vez de con los botones de opción que se habían construido primero.
+
+*Un defecto viejo que este slice sacó a la luz.* Al verificar el arranque desde cero se descubrió
+que **`npm run datos-de-prueba` fallaba** si ya había alguna compra: el comando borra las funciones
+para recrearlas, y una compra apunta a una función, así que la base lo impedía con un error de
+clave foránea. Venía roto **desde el vertical slice 2**, que fue el que creó la tabla de compras,
+pero solo se notaba si alguien había reservado algo antes de volver a sembrar. Este slice lo hizo
+mucho más probable, porque una compra pagada ya no desaparece sola. Se corrigió: el comando borra
+primero las compras. La comprobación se escribió antes del arreglo y se la vio fallar; es la
+número 23 del archivo. También se corrigió el `README.md`, que describía un comportamiento viejo
+de los datos de prueba ("coloca las tres funciones... empezando por el miércoles", cuando desde el
+vertical slice 1 siembra 42 funciones en los siete días).
+
+*Lo que a propósito NO se construyó.* No existe la venta en taquilla ni la cuenta vendedora de una
+compra (vertical slice 4); no se puede buscar una compra por nombre o identificación (vertical
+slice 5); no existe el estado "cancelada" de una función (vertical slice 6); y no hay ningún
+reporte (vertical slices 7 y 8). Tampoco se guarda la fecha y hora del pago: ningún requisito la
+pide, y los reportes por mes se calculan por la fecha de la **función**, no la de la compra.
+
+*Verificado sobre la base real, no solo sobre bases de prueba.* La base `datos/cine.db` que había
+en la carpeta tenía todavía el esquema del vertical slice 2 —cuatro columnas en `compras`— con 42
+funciones y 3 compras adentro. Al abrirla con el código nuevo quedó con las diez columnas, con el
+índice único del código, y **sin perder ninguna de las 42 funciones ni de las 3 compras**. Después
+se corrió `npm run datos-de-prueba` sobre ella, que es justo el caso que antes fallaba, y funcionó.
 
 ---
 

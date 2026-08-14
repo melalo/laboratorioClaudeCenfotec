@@ -87,6 +87,10 @@ Antes de dar por cerrado cualquier cambio:
 - Cuando un commit actualiza un documento porque el trabajo lo corrigió, el mensaje dice **qué
   decisión cambió**.
 - No hacer commit ni push por cuenta propia: se hace cuando lo pido.
+- **Cuando pido subir algo al repositorio, eso incluye el `push`.** "Subilo", "hacé commit",
+  "guardalo en Git" y cualquier forma parecida significan **commit y push**, en la misma tanda y
+  sin volver a preguntarme si lo subo. Sigue valiendo la regla de arriba: nada de esto se hace por
+  cuenta propia, solo cuando lo pido — pero cuando lo pido, se hace completo.
 - Nunca reescribir historial ya subido sin explicar el riesgo y pedir confirmación. Si se hace,
   crear antes una rama de respaldo y verificar, comparando contra ella, que el contenido quedó
   idéntico.
@@ -102,3 +106,19 @@ Antes de dar por cerrado cualquier cambio:
 
 No decir que algo quedó bien, que funciona o que está listo sin haber corrido la comprobación y
 visto el resultado. Si una comprobación falla, se dice que falló y se muestra la salida.
+
+## Al cerrar un vertical slice, repetir cómo probarlo
+
+Cada vez que se termina un vertical slice, el mensaje que anuncia que está listo **tiene que
+incluir de nuevo, escrito completo, cómo abrirlo y probarlo**:
+
+- el comando exacto para levantar la aplicación,
+- la dirección completa con su número de puerto (por ejemplo `http://localhost:3000`),
+- y qué debería ver yo en pantalla para saber que el slice funciona.
+
+**Se repite siempre, aunque ya se haya dicho antes en la misma sesión.** No vale "como te indiqué
+más arriba", "el mismo puerto de siempre" ni mandarme a buscarlo en un mensaje anterior: yo voy a
+probarlo en ese momento y necesito los datos ahí, a la vista, sin tener que subir en la
+conversación.
+
+Un slice no se da por cerrado hasta que ese bloque de "cómo probarlo" está escrito.

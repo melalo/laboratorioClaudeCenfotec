@@ -21,6 +21,24 @@ export function abrirBase(rutaArchivo) {
 // se quedaria sin las columnas nuevas. Esto se las agrega sin borrar lo que ya hay.
 function ponerseAlDia(db) {
   agregarColumnaSiFalta(db, 'peliculas', 'afiche', 'TEXT');
+
+  // El pago, del vertical slice 3. La tabla de compras nacio en el vertical slice 2 con
+  // solo lo que la reserva necesitaba, a proposito (DISENO.md, "Que campos de la entidad
+  // Compra se crean en el vertical slice 2").
+  agregarColumnaSiFalta(db, 'compras', 'nombre', 'TEXT');
+  agregarColumnaSiFalta(db, 'compras', 'identificacion', 'TEXT');
+  agregarColumnaSiFalta(db, 'compras', 'estudiantes', 'INTEGER');
+  agregarColumnaSiFalta(db, 'compras', 'total', 'INTEGER');
+  agregarColumnaSiFalta(db, 'compras', 'codigo', 'TEXT');
+  agregarColumnaSiFalta(db, 'compras', 'metodo', 'TEXT');
+  agregarColumnaSiFalta(db, 'compras_asientos', 'descuento', 'TEXT');
+  agregarColumnaSiFalta(db, 'compras_asientos', 'precio', 'INTEGER');
+
+  // Dos compras no pueden terminar con el mismo codigo de confirmacion. Se hace con un
+  // indice y no con una columna UNIQUE porque SQLite no deja agregarle esa restriccion a
+  // una tabla que ya existe. Las reservas sin pagar no molestan: no tienen codigo, y
+  // SQLite no considera iguales entre si a dos casillas vacias.
+  db.exec('CREATE UNIQUE INDEX IF NOT EXISTS codigo_de_compra ON compras (codigo)');
 }
 
 function agregarColumnaSiFalta(db, tabla, columna, tipo) {
@@ -78,23 +96,34 @@ function crearTablas(db) {
       rol                TEXT NOT NULL CHECK (rol IN ('administracion', 'taquilla'))
     );
 
-    -- Una Compra del vertical slice 2: por ahora solo la reserva temporal. El nombre y
-    -- la identificacion del cliente, el descuento, el precio y el codigo de confirmacion
-    -- los agrega el vertical slice 3, con "ponerseAlDia" (DISENO.md, "Otras decisiones").
-    -- Los tres estados son los del modelo de datos, aunque este slice solo produzca dos:
-    -- 'pagada' la crea el vertical slice 3.
+    -- Una Compra: nace como reserva temporal en el vertical slice 2 y se completa al
+    -- pagar, en el vertical slice 3. Las cuatro primeras columnas son las de la reserva;
+    -- de "nombre" en adelante, las del pago. Falta la cuenta vendedora, que agrega el
+    -- vertical slice 4: una compra en linea no tiene ninguna.
     CREATE TABLE IF NOT EXISTS compras (
-      id         INTEGER PRIMARY KEY,
-      funcion_id INTEGER NOT NULL REFERENCES funciones(id),
-      estado     TEXT    NOT NULL CHECK (estado IN ('reservada', 'pagada', 'vencida')),
-      creada_en  TEXT    NOT NULL
+      id             INTEGER PRIMARY KEY,
+      funcion_id     INTEGER NOT NULL REFERENCES funciones(id),
+      estado         TEXT    NOT NULL CHECK (estado IN ('reservada', 'pagada', 'vencida')),
+      creada_en      TEXT    NOT NULL,
+      nombre         TEXT,
+      identificacion TEXT,
+      estudiantes    INTEGER,
+      total          INTEGER,
+      codigo         TEXT,
+      metodo         TEXT
     );
 
-    -- Una compra puede llevarse varios asientos (RF-3), asi que la relacion vive aparte.
-    -- Al borrarse la compra se van con ella: no existe un asiento comprado sin compra.
+    -- Cada renglon de esta tabla es un **Boleto** del modelo de datos (DISENO.md, "Donde
+    -- vive la entidad Boleto"): no hay una tabla llamada "boletos". Guarda a que asiento
+    -- da derecho, que descuento se le aplico y cuanto se pago por el. Una compra puede
+    -- llevarse varios asientos (RF-3) y cada uno puede tener un descuento distinto, por
+    -- eso el precio vive aca y no en la compra. Al borrarse la compra se van con ella:
+    -- no existe un boleto sin compra.
     CREATE TABLE IF NOT EXISTS compras_asientos (
       compra_id  INTEGER NOT NULL REFERENCES compras(id) ON DELETE CASCADE,
       asiento_id INTEGER NOT NULL REFERENCES asientos(id),
+      descuento  TEXT,
+      precio     INTEGER,
       PRIMARY KEY (compra_id, asiento_id)
     );
   `);

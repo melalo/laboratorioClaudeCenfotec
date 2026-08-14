@@ -21,6 +21,12 @@ export const CUENTAS = {
 // Un jueves fijo, para que las comprobaciones no dependan del dia en que se corran.
 export const JUEVES_DE_PRUEBA = new Date(2026, 7, 13, 10, 0);
 
+// La semana vigente de ese jueves va del 13 al 19 de agosto de 2026, y como toda semana
+// del cine va de jueves a miercoles, contiene exactamente un miercoles: el 19 (RN-2, el
+// dia del descuento). El jueves 13 sirve como "un dia que no es miercoles".
+export const MIERCOLES_DE_PRUEBA = '2026-08-19';
+export const DIA_COMUN_DE_PRUEBA = '2026-08-13';
+
 // Un PNG de 1x1 transparente: lo mas chico que se puede subir y que sea una imagen de verdad.
 export const PNG_MINIMO = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
@@ -36,7 +42,13 @@ export async function levantarApp(opciones = {}) {
   if (opciones.sembrar !== false) {
     sembrarDatosDePrueba(db, opciones.hoy ?? JUEVES_DE_PRUEBA, carpetaAfiches);
   }
-  const app = crearServidor(db, { ahora: () => opciones.hoy ?? JUEVES_DE_PRUEBA, carpetaAfiches });
+  // `tarifas` se puede reemplazar para comprobar que el precio sale de la configuracion
+  // y no esta escrito dentro del codigo (vertical slice 3).
+  const app = crearServidor(db, {
+    ahora: () => opciones.hoy ?? JUEVES_DE_PRUEBA,
+    carpetaAfiches,
+    ...(opciones.tarifas ? { tarifas: opciones.tarifas } : {}),
+  });
   const servidor = app.listen(0, '127.0.0.1');
   await once(servidor, 'listening');
   const direccion = `http://127.0.0.1:${servidor.address().port}`;
@@ -141,4 +153,46 @@ export function unaFuncion(db, capacidad = 120) {
         WHERE s.capacidad = ? ORDER BY f.fecha_hora LIMIT 1`,
     )
     .get(capacidad);
+}
+
+// La primera funcion de un dia concreto. El vertical slice 3 la necesita para separar
+// el miercoles —el dia del descuento de RN-2— de cualquier otro dia.
+export function funcionDelDia(db, dia, capacidad = 120) {
+  return db
+    .prepare(
+      `SELECT f.id, f.fecha_hora, f.formato, s.id AS sala_id, s.capacidad,
+              s.nombre AS sala, p.nombre AS pelicula
+         FROM funciones f
+         JOIN salas s ON s.id = f.sala_id
+         JOIN peliculas p ON p.id = f.pelicula_id
+        WHERE substr(f.fecha_hora, 1, 10) = ? AND s.capacidad = ?
+        ORDER BY f.fecha_hora LIMIT 1`,
+    )
+    .get(dia, capacidad);
+}
+
+// La compra tal como quedo guardada, con sus boletos. Es lo que permite comprobar el
+// precio y el descuento sin creerle a la pantalla (vertical slice 3).
+export function compraGuardada(db, compraId) {
+  const guardada = db.prepare('SELECT * FROM compras WHERE id = ?').get(compraId);
+  if (!guardada) return null;
+
+  // node:sqlite devuelve los renglones como objetos "pelados", sin el molde comun de
+  // JavaScript. Se copian a objetos normales para poder compararlos de igual a igual
+  // con los que escribe la prueba.
+  const compra = { ...guardada };
+  compra.boletos = db
+    .prepare(
+      `SELECT a.fila || a.numero AS codigo, ca.descuento, ca.precio
+         FROM compras_asientos ca JOIN asientos a ON a.id = ca.asiento_id
+        WHERE ca.compra_id = ? ORDER BY a.fila, a.numero`,
+    )
+    .all(compraId)
+    .map((boleto) => ({ ...boleto }));
+  return compra;
+}
+
+// El numero de compra que sale del redirect de /reservar: '/reservas/7' -> 7
+export function idDelRedirect(respuesta) {
+  return Number(respuesta.headers.get('location').split('/').at(-1));
 }
