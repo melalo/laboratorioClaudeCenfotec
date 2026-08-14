@@ -36,8 +36,8 @@ export function carpetaAfichesDe(rutaBaseDeDatos) {
   return path.join(path.dirname(rutaBaseDeDatos), 'afiches');
 }
 
-// Solo las entidades que necesita el vertical slice 1. La tabla de Compras la agrega
-// el vertical slice 2, cuando aparece la primera reserva.
+// Solo las entidades que necesitan los vertical slices ya construidos. Cada slice
+// agrega lo suyo cuando le hace falta, no antes (PLAN.md, "Como usar este plan").
 function crearTablas(db) {
   db.exec(`
     CREATE TABLE IF NOT EXISTS salas (
@@ -76,6 +76,26 @@ function crearTablas(db) {
       contrasena_cifrada TEXT NOT NULL,
       sal                TEXT NOT NULL,
       rol                TEXT NOT NULL CHECK (rol IN ('administracion', 'taquilla'))
+    );
+
+    -- Una Compra del vertical slice 2: por ahora solo la reserva temporal. El nombre y
+    -- la identificacion del cliente, el descuento, el precio y el codigo de confirmacion
+    -- los agrega el vertical slice 3, con "ponerseAlDia" (DISENO.md, "Otras decisiones").
+    -- Los tres estados son los del modelo de datos, aunque este slice solo produzca dos:
+    -- 'pagada' la crea el vertical slice 3.
+    CREATE TABLE IF NOT EXISTS compras (
+      id         INTEGER PRIMARY KEY,
+      funcion_id INTEGER NOT NULL REFERENCES funciones(id),
+      estado     TEXT    NOT NULL CHECK (estado IN ('reservada', 'pagada', 'vencida')),
+      creada_en  TEXT    NOT NULL
+    );
+
+    -- Una compra puede llevarse varios asientos (RF-3), asi que la relacion vive aparte.
+    -- Al borrarse la compra se van con ella: no existe un asiento comprado sin compra.
+    CREATE TABLE IF NOT EXISTS compras_asientos (
+      compra_id  INTEGER NOT NULL REFERENCES compras(id) ON DELETE CASCADE,
+      asiento_id INTEGER NOT NULL REFERENCES asientos(id),
+      PRIMARY KEY (compra_id, asiento_id)
     );
   `);
 }

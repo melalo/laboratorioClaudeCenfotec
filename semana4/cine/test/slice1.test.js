@@ -654,16 +654,19 @@ test('cada asiento del mapa se identifica por su fila y su numero', async () => 
   }
 });
 
-test('el mapa de asientos distingue solo dos estados: disponible y no disponible', async () => {
+test('el mapa de asientos distingue tres estados: disponible, eligiendo y no disponible', async () => {
   const app = await levantarApp();
   try {
     const funcion = app.db.prepare('SELECT id FROM funciones LIMIT 1').get();
     const html = await (await app.navegador().ver(`/funciones/${funcion.id}/asientos`)).text();
 
-    // VISUALS.md define ademas un amarillo para "reservado"; DISENO.md decide no usarlo.
+    // Al escribirse este vertical slice la leyenda tenia dos estados, porque todavia no
+    // habia forma de tomar un asiento. El vertical slice 2 estreno el amarillo —"los que
+    // este cliente esta eligiendo"— y con el, el tercer estado (DISENO.md, PLAN.md).
     const muestras = html.match(/asiento-muestra/g) ?? [];
-    assert.equal(muestras.length, 2, 'la leyenda debe tener exactamente dos estados');
+    assert.equal(muestras.length, 3, 'la leyenda debe tener exactamente tres estados');
     assert.match(html, /Disponible/);
+    assert.match(html, /Los estás eligiendo/);
     assert.match(html, /No disponible/);
   } finally {
     await app.cerrar();

@@ -9,16 +9,32 @@ está simulado: el sistema nunca se conecta a ningún medio de pago.
 
 ## Qué hace hoy
 
-Lo construido hasta ahora es el **vertical slice 1: Cartelera y mapa de asientos**.
+Lo construido hasta ahora son los **vertical slices 1 y 2**.
 
-- El cliente, **sin cuenta**, ve la cartelera **un día a la vez**: elige el día en una lista
-  desplegable y ve, para ese día, cada sala con su película, su afiche y los horarios. Desde ahí
-  entra al mapa de asientos de cualquier función.
+**Vertical slice 1 — Cartelera y mapa de asientos:**
+
+- El cliente, **sin cuenta**, ve la cartelera **un día a la vez**: los siete días de la semana
+  están en fila arriba, elige uno con un clic, y ve para ese día cada sala con su película, su
+  afiche y los horarios. Desde ahí entra al mapa de asientos de cualquier función.
 - El personal entra con **nombre de usuario y contraseña**, desde el enlace del pie de página.
 - Solo una cuenta con rol de **administración** puede cargar la cartelera de la semana y subir el
   afiche de cada película; la cuenta de **taquilla** no puede.
 
-Todavía no se puede reservar ni comprar: eso llega en los vertical slices 2 y 3.
+**Vertical slice 2 — Reserva temporal de asiento:**
+
+- En el mapa, el cliente **marca los asientos que quiere** y se le ponen **amarillos**. Cada
+  butaca libre es una casilla de verificación, así que marcar y desmarcar no le pide nada al
+  servidor: no hay una sola línea de JavaScript en toda la aplicación.
+- Al apretar **Reservar**, esos asientos quedan tomados **3 minutos**. Cualquier otro cliente que
+  mire el mismo mapa los ve **en gris**, igual que un asiento vendido.
+- El cliente pasa a la pantalla de su reserva: película, sala, horario, sus asientos, la hora en
+  que vencen y una barra que se va vaciando.
+- Si pasan los 3 minutos sin pagar, los asientos **vuelven a estar disponibles** solos.
+- Si dos clientes eligen el mismo asiento casi al mismo tiempo, **uno lo consigue** y al otro se
+  le avisa y se le muestra el mapa actualizado.
+
+Todavía no se puede pagar: eso llega en el vertical slice 3. Por eso hoy **toda** reserva termina
+venciendo a los 3 minutos.
 
 ## Qué hace falta tener instalado
 
@@ -82,8 +98,14 @@ hacer.
 npm test
 ```
 
-Corre las comprobaciones del vertical slice 1: levanta el servidor de verdad y una base SQLite de
-verdad en un archivo temporal, y revisa cada condición del plan. No toca tu base de datos.
+Corre las comprobaciones de los vertical slices 1 y 2: levanta el servidor de verdad y una base
+SQLite de verdad en un archivo temporal, y revisa cada condición del plan. No toca tu base de
+datos. Tardan alrededor de un minuto.
+
+Las del vencimiento de la reserva **no esperan 3 minutos**: le restan minutos a la fecha de la
+reserva dentro de la base, que es la forma de comprobar el plazo sin que las comprobaciones tarden
+una eternidad. Que el plazo también funcione con el reloj de verdad se comprobó a mano, y quedó
+anotado en `../PLAN.md`.
 
 ## Qué hay en cada carpeta
 
@@ -96,6 +118,7 @@ cine/
     vistas.js          arma las pantallas (HTML)
     base-de-datos.js   abre SQLite y crea las tablas
     datos-de-prueba.js borra y recrea los datos de prueba
+    reservas.js        decide si un asiento está libre, y toma las reservas de 3 minutos
     semana.js          la regla de "la semana vigente" (jueves a miércoles)
     contrasenas.js     cifra y verifica las contraseñas del personal
   public/css/          las hojas de estilo (Pico.css + la propia del cine)

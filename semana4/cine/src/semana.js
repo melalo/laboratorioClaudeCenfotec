@@ -21,6 +21,12 @@ export function comoTextoFechaHora(fecha) {
   return `${comoTextoFecha(fecha)} ${hora}:${minutos}`;
 }
 
+// Las funciones se guardan al minuto, pero el plazo de una reserva es de 3 minutos:
+// ahi los segundos si importan, asi que se guardan (vertical slice 2).
+export function comoTextoInstante(fecha) {
+  return `${comoTextoFechaHora(fecha)}:${String(fecha.getSeconds()).padStart(2, '0')}`;
+}
+
 // Los 7 dias de la semana vigente, del jueves al miercoles.
 export function diasDeLaSemana(hoy = new Date()) {
   const diasDesdeElJueves = (hoy.getDay() + 7 - JUEVES) % 7;

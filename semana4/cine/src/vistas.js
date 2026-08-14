@@ -160,18 +160,26 @@ export function carteleraCliente({ salas, dias, diaElegido, semana }) {
   return pagina({ titulo: 'Cartelera', contenido: `${encabezado}${filaDeDias}${tarjetas}` });
 }
 
-export function mapaDeAsientos({ funcion, filas }) {
+// Un asiento libre es una casilla de verificacion disfrazada de butaca: al marcarla, el
+// propio navegador la pinta de amarillo con CSS, sin pedirle nada al servidor (DISENO.md,
+// "Otras decisiones"). Uno no disponible no es casilla, asi que no se puede marcar.
+function dibujarAsiento({ numero, codigo, estado }, fila) {
+  const butaca = `<span class="asiento ${estado}" data-asiento="${escapar(codigo)}" title="Fila ${escapar(fila)}, asiento ${numero}">${numero}</span>`;
+  if (estado === 'ocupado') return butaca;
+
+  // 'eligiendo' es un asiento que este cliente ya tiene reservado: llega marcado, para
+  // que volver a reservar no le quite lo que ya tomo.
+  const marcada = estado === 'eligiendo' ? ' checked' : '';
+  return `<label class="butaca"><input type="checkbox" name="asientos" value="${escapar(codigo)}"${marcada}>${butaca}</label>`;
+}
+
+export function mapaDeAsientos({ funcion, filas, errores = [] }) {
   const dibujo = filas
     .map(
-      ({ fila, numeros }) => `
+      ({ fila, asientos }) => `
       <div class="fila-asientos">
         <span class="etiqueta-fila">${escapar(fila)}</span>
-        ${numeros
-          .map(
-            (n) =>
-              `<span class="asiento disponible" data-asiento="${escapar(fila + n)}" title="Fila ${escapar(fila)}, asiento ${n}">${n}</span>`,
-          )
-          .join('')}
+        ${asientos.map((asiento) => dibujarAsiento(asiento, fila)).join('')}
       </div>`,
     )
     .join('');
@@ -183,18 +191,74 @@ export function mapaDeAsientos({ funcion, filas }) {
       ${escapar(conMayuscula(funcion.formato))} ·
       ${funcion.capacidad} asientos
     </p>
-    <div class="marco-mapa">
-      <p class="pantalla-sala">P A N T A L L A</p>
-      <div class="mapa">${dibujo}</div>
-    </div>
-    <p class="leyenda">
-      <span><span class="asiento-muestra disponible"></span>Disponible</span>
-      <span><span class="asiento-muestra ocupado"></span>No disponible</span>
-    </p>
+    ${avisos(errores)}
+    <form method="post" action="/funciones/${funcion.id}/reservar">
+      <div class="marco-mapa">
+        <p class="pantalla-sala">P A N T A L L A</p>
+        <div class="mapa">${dibujo}</div>
+      </div>
+      <p class="leyenda">
+        <span><span class="asiento-muestra disponible"></span>Disponible</span>
+        <span><span class="asiento-muestra eligiendo"></span>Los estás eligiendo</span>
+        <span><span class="asiento-muestra ocupado"></span>No disponible</span>
+      </p>
+      <button type="submit">Reservar los asientos marcados</button>
+    </form>
     <p><a href="/">← Volver a la cartelera</a></p>
   `;
 
   return pagina({ titulo: funcion.pelicula, contenido });
+}
+
+// La pantalla de la reserva. Es donde el vertical slice 3 va a colgar el pago
+// (DISENO.md, "Otras decisiones").
+export function pantallaReserva({ reserva, minutosDePlazo }) {
+  const volverAlMapa = `<p><a href="/funciones/${reserva.funcion_id}/asientos">← Volver al mapa de asientos</a></p>`;
+
+  if (!reserva.vigente) {
+    return pagina({
+      titulo: 'La reserva venció',
+      contenido: `<article class="aviso-error">
+          <p>Esta reserva venció: pasaron más de ${minutosDePlazo} minutos sin completar el pago,
+             así que los asientos volvieron a quedar disponibles para cualquiera.</p>
+        </article>
+        ${volverAlMapa}`,
+    });
+  }
+
+  // La barra se vacia sola, con una animacion de CSS: sin nada de JavaScript. Arranca
+  // en la parte que corresponda —si ya pasaron 40 de los 180 segundos, arranca ahi—
+  // usando una espera negativa, que es como se le pide a CSS que empiece a mitad de
+  // camino (DISENO.md, "Otras decisiones").
+  const plazoEnSegundos = minutosDePlazo * 60;
+  const transcurridos = Math.max(0, plazoEnSegundos - reserva.segundos_restantes);
+  const barra = `<div class="barra-plazo" role="img"
+      aria-label="Quedan menos de ${minutosDePlazo} minutos para completar el pago">
+      <span style="animation-duration: ${plazoEnSegundos}s; animation-delay: -${transcurridos}s"></span>
+    </div>`;
+
+  const contenido = `
+    <article class="ficha-reserva">
+      <h3>${escapar(reserva.pelicula)}</h3>
+      <p class="ficha-funcion">
+        <strong>${escapar(reserva.sala)}</strong> ·
+        ${escapar(fechaLegible(reserva.fecha_hora))} ·
+        ${escapar(conMayuscula(reserva.formato))}
+      </p>
+      <p class="asientos-reservados">
+        ${reserva.asientos.map((a) => `<span class="pastilla-asiento">${escapar(a)}</span>`).join('')}
+      </p>
+      <p>Guardados hasta las <strong>${escapar(reserva.vence.slice(11, 16))}</strong>.
+         Si no se paga antes, vuelven a quedar libres.</p>
+      ${barra}
+    </article>
+    <p><button disabled>Continuar al pago</button></p>
+    <p><small>El pago se construye en el vertical slice 3; por ahora toda reserva vence
+       a los ${minutosDePlazo} minutos porque todavía no hay forma de pagarla (PLAN.md).</small></p>
+    ${volverAlMapa}
+  `;
+
+  return pagina({ titulo: 'Reserva tomada', contenido });
 }
 
 // --- Personal --------------------------------------------------------------

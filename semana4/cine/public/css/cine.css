@@ -72,10 +72,11 @@
   --cine-on-error: #690005;
   --cine-error-container: #93000a;
 
-  /* Asientos: solo dos estados (DISENO.md). El amarillo de VISUALS.md queda sin
-     usar a proposito: al cliente, un asiento reservado por otro y uno vendido le
-     sirven para lo mismo. */
+  /* Asientos: tres estados (DISENO.md). El amarillo es "los que este cliente esta
+     eligiendo", no "reservado por otro" como en VISUALS.md: al cliente, un asiento
+     reservado por otro y uno vendido le sirven para lo mismo, y los dos van en gris. */
   --cine-seat-available: #2ecc71;
+  --cine-seat-choosing: #f1c40f;
   --cine-seat-unavailable: #4a4a4a;
 
   /* Formato de la funcion */
@@ -651,6 +652,39 @@ ul.acciones {
   color: #1a1a1a;
 }
 
+/* Elegir asiento (vertical slice 2). Cada butaca libre es una casilla de verificacion:
+   la casilla no se ve, pero sigue existiendo, asi que tambien se puede elegir con el
+   teclado. "display: contents" hace que la etiqueta desaparezca del dibujo y la butaca
+   siga siendo hija directa de la fila, para que no se descuadre el mapa. */
+.butaca {
+  display: contents;
+}
+
+.butaca input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.butaca .asiento {
+  cursor: pointer;
+}
+
+.butaca input:focus-visible + .asiento {
+  outline: 2px solid var(--cine-primary);
+  outline-offset: 2px;
+}
+
+/* El amarillo, en sus dos momentos: el asiento recien marcado —lo pinta el navegador
+   solo, sin JavaScript— y el que este cliente ya tiene reservado (DISENO.md). */
+.asiento.eligiendo,
+.butaca input:checked + .asiento {
+  background: var(--cine-seat-choosing);
+  color: #3d3000;
+}
+
 @media (min-width: 768px) {
   .asiento {
     font-size: 14px;
@@ -682,8 +716,69 @@ ul.acciones {
   background: var(--cine-seat-available);
 }
 
+.asiento-muestra.eligiendo {
+  background: var(--cine-seat-choosing);
+}
+
 .asiento-muestra.ocupado {
   background: var(--cine-seat-unavailable);
+}
+
+/* ------------------------------------------------- 6b. Pantalla de la reserva */
+
+.ficha-reserva {
+  background: var(--cine-surface-low);
+  border: 1px solid var(--cine-outline-variant);
+  border-radius: var(--cine-round-lg);
+  padding: calc(var(--cine-base) * 2);
+}
+
+.asientos-reservados {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--cine-base) / 2);
+}
+
+.pastilla-asiento {
+  font-family: var(--cine-dato);
+  font-weight: 700;
+  font-size: 14px;
+  background: var(--cine-seat-choosing);
+  color: #3d3000;
+  border-radius: var(--cine-round-sm);
+  padding: 4px 10px;
+}
+
+/* La barra del plazo se vacia sola con una animacion de CSS: no hay una linea de
+   JavaScript en toda la aplicacion (DISENO.md, "Otras decisiones"). Cuanto dura y
+   desde donde arranca los escribe el servidor en la propia etiqueta, porque dependen
+   de cuanto le queda a esa reserva. */
+.barra-plazo {
+  height: 8px;
+  border-radius: var(--cine-round-sm);
+  background: var(--cine-surface);
+  border: 1px solid var(--cine-outline-variant);
+  overflow: hidden;
+}
+
+.barra-plazo span {
+  display: block;
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, var(--cine-secondary), var(--cine-seat-choosing));
+  transform-origin: left center;
+  animation-name: vaciarse-el-plazo;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+@keyframes vaciarse-el-plazo {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
 }
 
 .ficha-funcion {

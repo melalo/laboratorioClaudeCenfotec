@@ -37,7 +37,7 @@ por el mismo servidor, sin herramientas de compilación adicionales; base de dat
 | # | Vertical slice | Depende de | Estado |
 |---|---|---|---|
 | 1 | Cartelera y mapa de asientos | — | **cerrado** (13 ago 2026) |
-| 2 | Reserva temporal de asiento | 1 | pendiente |
+| 2 | Reserva temporal de asiento | 1 | **cerrado** (14 ago 2026) |
 | 3 | Compra en línea completa | 2 | pendiente |
 | 4 | Venta en taquilla | 3 | pendiente |
 | 5 | Código perdido | 3 | pendiente |
@@ -187,7 +187,9 @@ Qué implicó, además de reescribir la hoja de estilos propia:
   al amarillo un significado distinto del que le da `VISUALS.md`, y así quedó escrito en
   `DISENO.md`. El comportamiento se construye en el **vertical slice 2**, que es donde se elige
   asiento; este vertical slice sigue mostrando solo verde, y su comprobación de dos estados en la
-  leyenda sigue siendo la correcta para lo que hoy existe.
+  leyenda sigue siendo la correcta para lo que hoy existe. *(Corregido el 14 ago 2026, al construir
+  el vertical slice 2: el amarillo ya existe, así que esa comprobación pasó a exigir **tres**
+  estados en la leyenda. No es una regresión de este slice: es este párrafo cumpliéndose.)*
 - **Los afiches no se veían porque el sistema no los guardaba.** `VISUALS.md` da por sentado un
   afiche en cada tarjeta, pero la entidad Película era solo `id, nombre` y ningún requisito lo
   pedía. Se corrigió primero la especificación (glosario "Afiche", RF-1, RF-12 y el nuevo REG-4) y
@@ -273,9 +275,16 @@ slice muestra todo disponible: no hay nada que pueda ocuparlo todavía.
 - Al elegirlos, quedan reservados temporalmente: el mapa deja de mostrarlos disponibles para
   cualquier otro cliente que lo consulte (RN-6, RN-7). Los otros clientes los ven **en gris**, sin
   distinguirlos de un asiento ya vendido.
-- Si pasan 5 minutos desde la reserva sin que se complete el pago, el asiento vuelve a aparecer
+- Si pasan 3 minutos desde la reserva sin que se complete el pago, el asiento vuelve a aparecer
   disponible (RF-4). (Completar el pago se construye en el vertical slice 3; hasta que ese slice
-  exista, toda reserva de este slice vence a los 5 minutos porque no hay forma de pagarla.)
+  exista, toda reserva de este slice vence a los 3 minutos porque no hay forma de pagarla.)
+- Al reservar, el cliente pasa a una pantalla propia de la reserva, con la película, la sala, el
+  horario, sus asientos, la hora de vencimiento y una barra que se vacía en lo que queda del
+  plazo. Esa pantalla es donde el vertical slice 3 va a colgar el pago (`DISENO.md` → "Otras
+  decisiones").
+- Si el cliente vuelve al mapa con una reserva vigente, sus asientos aparecen en amarillo y ya
+  marcados; volver a reservar deja la reserva siendo exactamente lo que quedó marcado, y libera
+  los asientos que soltó (`DISENO.md` → "Otras decisiones").
 - Si dos clientes eligen el mismo asiento casi al mismo tiempo, el sistema revisa de nuevo la
   disponibilidad al confirmar; a quien pierde la carrera se le informa que el asiento ya no está
   disponible y se le muestra el mapa actualizado (`DISENO.md` → "Manejo de errores").
@@ -284,10 +293,10 @@ slice muestra todo disponible: no hay nada que pueda ocuparlo todavía.
 - Como cliente, elegir 2 asientos disponibles y verificar que en el propio mapa quedan en amarillo,
   y que una segunda sesión de cliente que consulta el mismo mapa ya no los ve disponibles: los ve
   en gris, igual que un asiento vendido.
-- Prueba automatizada: crear una reserva, retroceder 6 minutos su fecha/hora de creación en la
+- Prueba automatizada: crear una reserva, retroceder 4 minutos su fecha/hora de creación en la
   base de datos, volver a pedir el mapa, y verificar que esos asientos aparecen disponibles otra
   vez.
-- A mano, una sola vez: reservar un asiento, esperar 5 minutos reales sin hacer nada, recargar el
+- A mano, una sola vez: reservar un asiento, esperar 3 minutos reales sin hacer nada, recargar el
   mapa y verificar que vuelve a estar disponible.
 - Prueba automatizada: lanzar dos pedidos de reserva del mismo asiento al mismo tiempo y
   verificar que exactamente uno queda reservado y el otro recibe la respuesta de "asiento ya no
@@ -300,10 +309,85 @@ slice muestra todo disponible: no hay nada que pueda ocuparlo todavía.
 - Produce: la Compra en estado "reservada temporalmente", con función, asiento(s) y la fecha/hora
   de creación de la reserva (`DISENO.md` → "Modelo de datos"). En este estado la Compra todavía
   no tiene nombre ni número de identificación del cliente, ni descuento aplicado, ni precio
-  pagado, ni código de confirmación: esos campos quedan vacíos y el vertical slice 3 los llena al
-  completar el pago.
+  pagado, ni código de confirmación: esos campos ni siquiera se crean todavía; los agrega el
+  vertical slice 3 al completar el pago (`DISENO.md` → "Otras decisiones").
 
-**Evidencia** *(vacía al escribir el plan; se llena al cerrar el slice, con fecha)*
+**Evidencia**
+
+*Cerrado el 14 de agosto de 2026.* `npm test` corre **67 comprobaciones automatizadas y pasan las
+67**: las 44 del vertical slice 1 —una de ellas corregida, ver abajo— y **23 nuevas** de este
+slice, en `cine/test/slice2.test.js`. Todas levantan el servidor de verdad y una base SQLite de
+verdad en un archivo temporal. Las cuatro que pedía este slice están cubiertas:
+
+| Lo que pedía el plan | Comprobación que lo cubre | Resultado |
+|---|---|---|
+| Elegir 2 asientos y verlos amarillos en el propio mapa | *en su propio mapa, el cliente ve en amarillo los asientos que tomó* | pasa |
+| Que otra sesión de cliente los vea en gris, sin distinguirlos de vendidos | *otro cliente ve en gris los asientos que el primero tomó…* | pasa |
+| Retroceder la reserva en la base y ver los asientos disponibles otra vez | *pasado el plazo, los asientos vuelven a aparecer disponibles* (retrocede 4 minutos) | pasa |
+| Dos pedidos del mismo asiento a la vez: uno gana, al otro se le avisa | *si dos clientes piden el mismo asiento a la vez, exactamente uno lo consigue* | pasa |
+
+*La comprobación a mano, con el reloj de verdad.* Las automatizadas hacen trampa con el tiempo:
+le restan minutos a la reserva dentro de la base. Para verificar que el plazo también funciona con
+el reloj real se levantó el servidor con su propia base y se esperó de verdad, el 14 de agosto:
+
+```
+[12:06:08] antes de reservar     -> disponibles 120, grises 0
+[12:06:08] POST reservar A1 y A2 -> 302 /reservas/1
+[12:06:08] pantalla de la reserva -> vence a las 12:09, barra si, JavaScript no
+[12:06:08] su propio mapa        -> amarillos 2, grises 0
+[12:06:08] mapa de otro cliente  -> amarillos 0, grises 2, disponibles 118
+[12:06:08] esperando 3 minutos reales sin tocar nada...
+[12:09:18] despues de esperar    -> disponibles 120, grises 0
+[12:09:18] la pantalla ahora dice que vencio: si
+[12:09:18] en la base: vencida=1
+```
+
+*El plazo bajó de 5 a 3 minutos.* Lo pidió la estudiante al ver la pantalla de la reserva. Se
+verificó primero que fuera legítimo: ni `PROMPT.md` ni la consigna fijan un número de minutos, y
+`DISENO.md` lo registra como elección propia entre 5, 10 y 15. La razón quedó escrita: el pago es
+simulado y no pide datos de tarjeta, así que completar la compra toma menos de un minuto; 5
+minutos bloqueaban el asiento mucho más de lo que la compra tarda. Se propagó a `DISENO.md`, a
+este plan —también al vertical slice 3, que hablaba de 5 minutos— y a `SEGUIMIENTO.md`.
+
+*El contador regresivo que no se hizo con JavaScript.* La estudiante pidió un conteo regresivo con
+los minutos bajando. Un conteo que se mueve exige JavaScript, y hasta acá el prototipo no usa una
+sola línea; romper esa racha por un adorno no se justificaba, porque quien decide si la reserva
+venció es siempre el servidor. Se le ofrecieron las tres opciones y eligió **una barra que se vacía
+sola, hecha con una animación de CSS**, acompañada de la hora exacta de vencimiento en texto. Los
+dos juntos dan lo mismo que el conteo, y hay una comprobación que fija que esa pantalla no traiga
+ninguna etiqueta `<script>`.
+
+*Decisiones nuevas, escritas en `DISENO.md` antes de construir.* Ninguna estaba resuelta en los
+documentos, así que ninguna se dio por supuesta: el mapa como formulario de casillas de
+verificación en vez de enlaces; la pantalla propia de la reserva —donde el vertical slice 3 colgará
+el pago— en vez de un aviso sobre el mapa; la barra de CSS; que reservar de nuevo en la misma
+función **reemplace** la reserva anterior y libere lo que el cliente soltó; que las reservas
+venzan **al consultar el mapa** en vez de con un proceso en segundo plano; que la carrera entre dos
+clientes se resuelva con una **transacción** y no con un índice único, porque "ocupado" depende del
+estado de la compra *y* del tiempo transcurrido; y que la tabla de Compras se cree con **solo los
+campos que este slice usa**.
+
+*La comprobación del vertical slice 1 que cambió.* La leyenda del mapa pasó de dos estados a tres,
+así que la comprobación que fijaba "exactamente dos" ahora fija "exactamente tres", y el comentario
+del CSS que decía que el amarillo quedaba sin usar se reescribió. Estaba anticipado en la evidencia
+del vertical slice 1: no es una regresión.
+
+*Lo que a propósito NO se construyó.* No existe el estado "pagada" de una Compra ni ninguno de sus
+campos de pago —nombre, identificación, estudiante, descuento, precio, código de confirmación,
+método de compra, cuenta vendedora—: los agrega el vertical slice 3. La consulta de disponibilidad
+tampoco los mira todavía. El botón "Continuar al pago" existe en la pantalla de la reserva pero
+está **desactivado**, marcando el lugar donde el próximo slice se engancha.
+
+*Lo que se detectó y no se tocó, por estar fuera de la carpeta del día:* nada. Dentro de la carpeta
+sí se corrigió un dato viejo en `cine/README.md`, que todavía decía que el día de la cartelera se
+elige con una lista desplegable, cuando el vertical slice 1 había terminado con los días en fila.
+
+*Nota de gobernanza.* Al ir a hacer la comprobación a mano, el puerto 3000 estaba ocupado por un
+servidor arrancado **el 13 de agosto a las 18:09**, de la sesión del vertical slice 1. Un primer
+pedido a ese puerto devolvió el mapa **sin casillas**, o sea el código viejo. Se verificó la fecha
+de arranque del proceso antes de sacar cualquier conclusión, y la comprobación se rehízo levantando
+un servidor propio en un puerto libre. Es la segunda vez que aparece este problema: quedó en
+`SEGUIMIENTO.md` como cosa a revisar antes de creerle a una prueba manual.
 
 ---
 
@@ -322,7 +406,7 @@ slice muestra todo disponible: no hay nada que pueda ocuparlo todavía.
   medio de pago real (RF-9).
 - Al confirmarse el pago, el sistema muestra en pantalla un código de confirmación con película,
   sala, función y el o los asientos comprados (RF-10).
-- Si pasaron más de 5 minutos entre reservar y pagar, la reserva ya venció (vertical slice 2) y
+- Si pasaron más de 3 minutos entre reservar y pagar, la reserva ya venció (vertical slice 2) y
   el sistema no permite completar la compra sobre esos asientos — hay que elegir de nuevo.
 
 **Con qué se comprueba**
@@ -337,7 +421,7 @@ slice muestra todo disponible: no hay nada que pueda ocuparlo todavía.
   sumados.
 - Completar una compra y verificar que en pantalla aparece un código de confirmación con
   película, sala, función y asiento(s).
-- Reservar un asiento, esperar más de 5 minutos, e intentar pagar: verificar que el sistema no lo
+- Reservar un asiento, esperar más de 3 minutos, e intentar pagar: verificar que el sistema no lo
   permite e indica que hay que elegir de nuevo.
 
 **Toca**: Ventas (pago y confirmación).

@@ -130,3 +130,66 @@ que pasan y su evidencia anotada en `PLAN.md`. La comprobación de "arrancar des
 y afiches que se fueron sumando durante el día. El trabajo quedó en dos commits: uno con el slice
 cerrado y otro con el ajuste de la cartelera a la fila de días. Los vertical slices 2 y 3 quedan
 pendientes: la consigna exige al menos tres piezas cerradas.
+
+---
+
+### 2026-08-14 — Vertical slice 2: reserva temporal de asiento
+
+**Encargo de la sesión:** continuar el prototipo construyendo el vertical slice 2, revisando antes
+todo lo que ya había. Conversación propia, como exige la consigna: un vertical slice por
+conversación.
+
+**Cómo arrancó.** Antes de tocar nada se revisó la carpeta entera y se buscó, en
+`ESPECIFICACION.md`, `DISENO.md`, `PLAN.md`, `VISUALS.md` y `PROMPT.md`, todo lo que este slice
+necesitaba. Aparecieron **siete decisiones que ningún documento resolvía**. Dos se le preguntaron a
+la estudiante, porque cambian lo que se ve en pantalla y lo que hay que defender; las otras cinco
+las tomó el agente y quedaron escritas con su razón en `DISENO.md`, **antes** de escribir código.
+
+**Decisiones tomadas por la estudiante:**
+
+- **El mapa se elige con casillas de verificación, no con enlaces.** Cada butaca libre es una
+  casilla disfrazada de butaca: al marcarla se pone amarilla sola, con puro CSS. Se descartó que
+  cada asiento fuera un enlace que reservara en el acto, porque RF-3 pide elegir *uno o más*
+  asientos y hacerlo de a uno obligaba a una ida y vuelta al servidor por butaca.
+- **Después de reservar, una pantalla propia de la reserva**, no un aviso sobre el mapa. Es donde
+  el vertical slice 3 va a colgar el pago, así que no habrá que rehacerla.
+- **El plazo de la reserva bajó de 5 a 3 minutos**, a pedido de la estudiante, "en todo lugar".
+  Antes de cambiarlo se verificó que fuera legítimo: ni `PROMPT.md` ni la consigna fijan minutos, y
+  `DISENO.md` lo registraba como elección propia entre 5, 10 y 15. Se propagó a `DISENO.md`,
+  `PLAN.md` —incluido el vertical slice 3, que también decía 5— y `SEGUIMIENTO.md`.
+
+**Corrección de rumbo: el contador regresivo que no se hizo.** La estudiante pidió un conteo
+regresivo con los minutos bajando. El agente no lo construyó de una: un conteo que se mueve exige
+JavaScript, y hasta acá el prototipo no usa una sola línea, así que se le expuso el choque con la
+decisión escrita y se le ofrecieron tres salidas. Eligió **una barra que se vacía sola con una
+animación de CSS**, más la hora exacta de vencimiento en texto. La racha de cero JavaScript se
+mantiene, y hay una comprobación que fija que esa pantalla no traiga ninguna etiqueta `<script>`.
+
+**Decisiones tomadas por el agente, escritas en `DISENO.md`:** que reservar de nuevo en la misma
+función **reemplace** la reserva anterior y libere lo que el cliente soltó; que las reservas venzan
+**al consultar el mapa** y no con un proceso en segundo plano; que la carrera entre dos clientes se
+resuelva con una **transacción** de SQLite y no con un índice único —porque "ocupado" depende del
+estado de la compra *y* del tiempo transcurrido, y un índice no puede consultar la hora—; que el
+amarillo cubra tanto el asiento recién marcado como el que este cliente ya tiene reservado; y que
+la tabla de Compras se cree con **solo los campos que este slice usa**.
+
+**Cómo se construyó.** Primero los documentos, después las comprobaciones, y solo entonces el
+código. Las 23 comprobaciones del slice se escribieron antes que nada y **se las vio fallar** —el
+módulo que iban a probar todavía no existía—, que es lo que demuestra que comprueban algo de
+verdad.
+
+**Entradas de gobernanza:**
+
+- **El control establecido ayer funcionó.** Al ir a hacer la comprobación a mano, el puerto 3000
+  estaba ocupado por un servidor arrancado **el 13 de agosto a las 18:09**, de la sesión anterior.
+  El primer pedido devolvió el mapa sin casillas, o sea el código viejo. En vez de concluir que el
+  código estaba mal, el agente aplicó el control que había quedado escrito: verificó la fecha de
+  arranque del proceso antes de sacar ninguna conclusión, y rehizo la comprobación levantando su
+  propio servidor en un puerto libre. **Refuerzo del control:** las comprobaciones contra la
+  aplicación en marcha se hacen desde ahora en un puerto libre y con base propia, en vez de contra
+  el servidor del puerto 3000, para que un proceso viejo no pueda contaminar el resultado.
+
+**Estado al cierre de la sesión:** vertical slice 2 cerrado, con **67 comprobaciones automatizadas**
+que pasan —44 del slice 1, una de ellas corregida, y 23 nuevas— más la comprobación a mano del
+plazo con el reloj de verdad, cuya salida quedó anotada en `PLAN.md`. Falta el **vertical slice 3**
+para llegar a las tres piezas cerradas que exige la consigna.

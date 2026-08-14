@@ -12,6 +12,7 @@ import multer from 'multer';
 import { carpetaAfichesDe } from './base-de-datos.js';
 import { configuracion, raizDelProyecto } from './config.js';
 import { coincide } from './contrasenas.js';
+import { crearReservas, MINUTOS_DE_RESERVA, ReservaRechazada } from './reservas.js';
 import { comoTextoFechaHora, diasDeLaSemana, semanaVigente } from './semana.js';
 import * as vistas from './vistas.js';
 
@@ -140,7 +141,6 @@ export function crearServidor(db, opciones = {}) {
         JOIN peliculas p ON p.id = f.pelicula_id
         JOIN salas s ON s.id = f.sala_id
        WHERE f.id = ?`),
-    asientosDeSala: db.prepare('SELECT fila, numero FROM asientos WHERE sala_id = ? ORDER BY fila, numero'),
     salas: db.prepare('SELECT id, nombre, capacidad FROM salas ORDER BY capacidad DESC'),
     salaPorId: db.prepare('SELECT id FROM salas WHERE id = ?'),
     cuentaPorUsuario: db.prepare('SELECT id, usuario, rol, contrasena_cifrada, sal FROM cuentas WHERE usuario = ?'),
@@ -149,6 +149,9 @@ export function crearServidor(db, opciones = {}) {
     cambiarAfiche: db.prepare('UPDATE peliculas SET afiche = ? WHERE id = ?'),
     crearFuncion: db.prepare('INSERT INTO funciones (pelicula_id, sala_id, fecha_hora, formato) VALUES (?, ?, ?, ?)'),
   };
+
+  // Todo lo que decide si un asiento esta libre u ocupado vive en su propio modulo.
+  const reservas = crearReservas(db);
 
   // --- Cliente, sin cuenta (RF-1, RF-2) ------------------------------------
 
@@ -173,26 +176,111 @@ export function crearServidor(db, opciones = {}) {
     res.send(vistas.carteleraCliente({ salas: agruparPorSala(funciones), dias, diaElegido, semana }));
   });
 
-  app.get('/funciones/:id/asientos', (req, res) => {
+  // --- Reserva temporal de asientos (RF-3, RF-4, RN-6, RN-7) ---------------
+
+  // Que compra tiene este cliente en esta funcion. Vive en su sesion: es lo unico que
+  // distingue "los asientos que yo estoy tomando" —el amarillo— de los ajenos, que van
+  // en gris (DISENO.md, representacion visual del mapa).
+  function reservaDeLaSesion(req, funcionId) {
+    return req.session.reservas?.[String(funcionId)] ?? null;
+  }
+
+  function funcionOAviso(req, res) {
     const funcion = consultas.funcionPorId.get(Number(req.params.id));
-    if (!funcion) {
-      return res.status(404).send(
-        vistas.pantallaAviso({ titulo: 'Función no encontrada', mensaje: 'Esa función no existe en la cartelera.' }),
-      );
-    }
+    if (funcion) return funcion;
+    res.status(404).send(
+      vistas.pantallaAviso({ titulo: 'Función no encontrada', mensaje: 'Esa función no existe en la cartelera.' }),
+    );
+    return null;
+  }
+
+  // Arma el mapa de una funcion tal como lo ve quien lo pide. Lo usan tanto la pantalla
+  // del mapa como la respuesta a quien perdio la carrera por un asiento.
+  function armarMapa(funcion, req, errores = []) {
+    // Antes de dibujar, se deja escrito en la base lo que el plazo ya decidio.
+    reservas.vencerLasPasadasDePlazo(funcion.id, ahora());
+
+    const tomados = reservas.ocupacionDe(funcion.id, ahora());
+    const mia = reservaDeLaSesion(req, funcion.id);
 
     // Los asientos se agrupan por fila para dibujar el mapa como se ve la sala.
     const filas = [];
-    for (const asiento of consultas.asientosDeSala.all(funcion.sala_id)) {
+    for (const asiento of reservas.asientosDeSala(funcion.sala_id)) {
       let fila = filas.at(-1);
       if (!fila || fila.fila !== asiento.fila) {
-        fila = { fila: asiento.fila, numeros: [] };
+        fila = { fila: asiento.fila, asientos: [] };
         filas.push(fila);
       }
-      fila.numeros.push(asiento.numero);
+      const compra = tomados.get(asiento.id);
+      const estado = !compra ? 'disponible' : compra === mia ? 'eligiendo' : 'ocupado';
+      fila.asientos.push({ numero: asiento.numero, codigo: asiento.codigo, estado });
     }
 
-    res.send(vistas.mapaDeAsientos({ funcion, filas }));
+    return vistas.mapaDeAsientos({ funcion, filas, errores });
+  }
+
+  app.get('/funciones/:id/asientos', (req, res) => {
+    const funcion = funcionOAviso(req, res);
+    if (funcion) res.send(armarMapa(funcion, req));
+  });
+
+  const RECHAZOS = {
+    SIN_ASIENTOS: { codigo: 400, mensaje: 'Hay que marcar al menos un asiento para reservar.' },
+    ASIENTO_DESCONOCIDO: { codigo: 400, mensaje: 'Alguno de los asientos elegidos no existe en esta sala.' },
+    ASIENTO_TOMADO: {
+      codigo: 409,
+      mensaje: 'Alguno de los asientos que elegiste ya no está disponible. Elegí otro en el mapa.',
+    },
+  };
+
+  app.post('/funciones/:id/reservar', (req, res) => {
+    const funcion = funcionOAviso(req, res);
+    if (!funcion) return;
+
+    // El formulario manda un "asientos" por cada butaca marcada: uno solo llega como
+    // texto, varios llegan como lista, y ninguno no llega.
+    const marcados = req.body.asientos;
+    const codigos = marcados === undefined ? [] : [].concat(marcados);
+
+    try {
+      const compraId = reservas.reservar({
+        funcionId: funcion.id,
+        salaId: funcion.sala_id,
+        codigos,
+        ahora: ahora(),
+        // Si ya tenia una reserva en esta funcion, la nueva la reemplaza (DISENO.md).
+        reservaPrevia: reservaDeLaSesion(req, funcion.id),
+      });
+
+      req.session.reservas = { ...(req.session.reservas ?? {}), [funcion.id]: compraId };
+      res.redirect(`/reservas/${compraId}`);
+    } catch (falla) {
+      if (!(falla instanceof ReservaRechazada)) throw falla;
+      const { codigo, mensaje } = RECHAZOS[falla.motivo];
+      // Se le muestra el mapa actualizado, con el asiento perdido ya en gris
+      // (DISENO.md, "Manejo de errores").
+      res.status(codigo).send(armarMapa(funcion, req, [mensaje]));
+    }
+  });
+
+  app.get('/reservas/:id', (req, res) => {
+    const compraId = Number(req.params.id);
+
+    // Una reserva solo se le muestra a quien la hizo. Todavia no tiene nombre ni
+    // identificacion, pero el vertical slice 3 se los va a agregar en esta pantalla.
+    const propias = Object.values(req.session.reservas ?? {});
+    const reserva = propias.includes(compraId) ? reservas.reservaPorId(compraId, ahora()) : null;
+
+    if (!reserva) {
+      return res.status(404).send(
+        vistas.pantallaAviso({
+          titulo: 'Reserva no encontrada',
+          mensaje: 'Esa reserva no existe, o fue hecha desde otro navegador.',
+        }),
+      );
+    }
+
+    res.send(vistas.pantallaReserva({ reserva, minutosDePlazo: MINUTOS_DE_RESERVA }));
   });
 
   // --- Ingreso del personal (RN-9) -----------------------------------------

@@ -75,13 +75,23 @@ export function navegador(direccion) {
     return respuesta;
   }
 
+  // Un formulario puede mandar varias veces el mismo campo —el mapa manda un "asientos"
+  // por cada butaca marcada—, asi que un valor que sea lista se agrega una vez por item.
+  function comoFormulario(datos) {
+    const campos = new URLSearchParams();
+    for (const [campo, valor] of Object.entries(datos)) {
+      for (const uno of Array.isArray(valor) ? valor : [valor]) campos.append(campo, String(uno));
+    }
+    return campos.toString();
+  }
+
   return {
     ver: (camino) => pedir(camino),
     enviar: (camino, datos) =>
       pedir(camino, {
         method: 'POST',
         headers: { 'content-type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams(datos).toString(),
+        body: comoFormulario(datos),
       }),
     // Un formulario con archivo adjunto viaja en otro formato: lo arma FormData, y a
     // proposito no se toca la cabecera de tipo de contenido para que fetch la complete.
@@ -110,4 +120,25 @@ export function contarAsientos(html) {
 
 export function contarAsientosDisponibles(html) {
   return (html.match(/class="asiento disponible"/g) ?? []).length;
+}
+
+// Los asientos que este mismo cliente tiene tomados: los amarillos (vertical slice 2).
+export function contarAsientosEligiendo(html) {
+  return (html.match(/class="asiento eligiendo"/g) ?? []).length;
+}
+
+export function contarAsientosOcupados(html) {
+  return (html.match(/class="asiento ocupado"/g) ?? []).length;
+}
+
+// La primera funcion de la cartelera de prueba, con los datos que hacen falta para
+// pedir su mapa y comprobar lo que muestra.
+export function unaFuncion(db, capacidad = 120) {
+  return db
+    .prepare(
+      `SELECT f.id, s.id AS sala_id, s.capacidad
+         FROM funciones f JOIN salas s ON s.id = f.sala_id
+        WHERE s.capacidad = ? ORDER BY f.fecha_hora LIMIT 1`,
+    )
+    .get(capacidad);
 }
