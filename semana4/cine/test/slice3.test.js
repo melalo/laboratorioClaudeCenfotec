@@ -304,7 +304,7 @@ test('un miercoles la tabla tiene una sola fila y ningun contador', async () => 
     assert.doesNotMatch(html, /<script/i, 'sin contador no hace falta nada de JavaScript');
     assert.doesNotMatch(html, /Entrada regular/i, 'la fila de entrada regular no aparece');
 
-    assert.match(html, /Entrada · miércoles/i, 'la unica fila dice que descuento se aplico');
+    assert.match(html, /Entrada · miércoles · 50%/, 'la fila dice el descuento y su porcentaje');
     assert.match(html, /₡2\.000/, 'la mitad del precio base');
     assert.match(html, /₡8\.000/, '4 boletos a ₡2.000');
     assert.match(

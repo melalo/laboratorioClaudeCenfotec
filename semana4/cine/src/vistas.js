@@ -254,7 +254,7 @@ function tablaDeBoletos({ compraId, tabla }) {
   // (DISENO.md, "Qué muestra la tabla cuando declarar estudiantes no cambiaría el precio").
   if (!hayQueRepartir(tabla)) {
     const precio = tabla.regular.precio;
-    const nombre = tabla.regular.descuento === 'miercoles' ? 'Entrada · miércoles' : 'Entrada';
+    const nombre = tabla.regular.descuento === 'miercoles' ? 'Entrada · miércoles · 50%' : 'Entrada';
     return `
     <table class="tabla-boletos">
       ${encabezado}
