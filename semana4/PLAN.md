@@ -63,8 +63,9 @@ por el mismo servidor, sin herramientas de compilación adicionales; base de dat
 - El cliente, sin cuenta, ve la cartelera de la semana vigente: películas —con su afiche—,
   horarios, sala —con cuántos asientos tiene—, y si cada función es doblada o subtitulada (RF-1).
   Si una película todavía no tiene afiche, en su lugar aparece un bloque con el título.
-- La cartelera se muestra **un día a la vez**: el cliente elige el día en una lista desplegable y
-  ve, para ese día, una tarjeta por sala con su película y sus horarios (RF-1).
+- La cartelera se muestra **un día a la vez**: arriba están los siete días de la semana en fila,
+  el cliente elige uno, y ve para ese día una tarjeta por sala con su película y sus horarios
+  agrupados por formato (RF-1). Los días que ya pasaron se muestran apagados, no se esconden.
 - Los datos de prueba reflejan lo que el cine realmente programa: tres funciones diarias en cada
   sala, los siete días de la semana vigente, y **una sola película por sala** en toda la semana
   (`ESPECIFICACION.md`, glosario "Cartelera" y RN-15).
@@ -80,10 +81,11 @@ por el mismo servidor, sin herramientas de compilación adicionales; base de dat
   los datos de prueba, y verificar que la cartelera aparece.
 - Verificar que el comando de datos de prueba deja tres funciones diarias en cada sala, los siete
   días de la semana vigente, y que cada sala proyecta una sola película en toda la semana.
-- Verificar que la cartelera ofrece un desplegable con los días de la semana que todavía tienen
-  funciones, y que al elegir un día se muestran solo las funciones de ese día.
+- Verificar que la cartelera muestra los siete días de la semana en fila, con el elegido marcado,
+  y que al elegir un día se muestran solo las funciones de ese día.
+- Verificar que un día de la semana que ya pasó aparece en la fila pero apagado, sin poder elegirse.
 - Verificar que, elegido el día, aparece una tarjeta por sala con su película, su afiche y los
-  horarios de ese día.
+  horarios de ese día agrupados por formato.
 - Con la cuenta de administración, cargar una función más, dentro de la semana vigente, y
   verificar que aparece leyendo la cartelera como cliente, en el día y la sala que le corresponden.
 - Con la cuenta de taquilla, intentar cargar la cartelera y verificar que el sistema lo rechaza.
@@ -114,10 +116,10 @@ por el mismo servidor, sin herramientas de compilación adicionales; base de dat
 
 **Evidencia** — 13 de agosto de 2026. Código en `cine/`.
 
-*Comprobaciones automatizadas* (`cine/test/`, se corren con `npm test`): **42 de 42 pasan, 0
+*Comprobaciones automatizadas* (`cine/test/`, se corren con `npm test`): **44 de 44 pasan, 0
 fallan**. Se escribieron antes del código y se las vio fallar primero por módulo inexistente.
 Cubren la regla de la semana vigente (7), los datos de prueba (7), el ingreso del personal (5), la
-carga de cartelera y sus permisos (6), la cartelera del cliente y el sistema de diseño (10), el
+carga de cartelera y sus permisos (6), la cartelera del cliente y el sistema de diseño (12), el
 mapa de asientos (5) y la persistencia (1); la restante es el archivo de apoyo de las pruebas.
 
 Comprobación por comprobación, como las pide este vertical slice:
@@ -129,8 +131,10 @@ Comprobación por comprobación, como las pide este vertical slice:
 | Cargar con administración ≥2 películas y 3 funciones en las dos salas, dentro de la semana, ≥1 en miércoles y ≥1 en otro día; verificarlas como cliente | El comando de datos de prueba siembra 2 películas y 3 funciones (Sala 1 y Sala 2; lunes 17, martes 18 y **miércoles 19**). Además, a mano, la cuenta de administración cargó 2 funciones más de una tercera película | Las 5 funciones aparecen en la cartelera que ve un cliente sin cuenta, cada una con película, sala, día, hora y si es doblada o subtitulada. |
 | Con taquilla, intentar cargar la cartelera | Automatizada y a mano | `GET` y `POST` de la pantalla de cartelera → **403**, y el conteo de funciones no cambia. |
 | Verificar que los datos de prueba dejan 3 funciones diarias en cada sala, los 7 días, y una sola película por sala | Automatizada, y a mano corriendo el comando | **42 funciones**: las 14 combinaciones de día y sala tienen exactamente 3. Cada sala tiene **una** película y 21 funciones: *Sombras en el puerto* en la Sala 1 y *Camino al faro* en la Sala 2 (RN-15). |
-| Verificar el desplegable de días y que al elegir uno se ven solo sus funciones | Automatizada, y a mano contra la aplicación en marcha | El desplegable ofrece los 7 días de la semana que todavía tienen funciones. Pidiendo el domingo 16 aparecen sus 6 funciones y ninguna del sábado 15. Un día fuera de la semana, o escrito a mano en la dirección, cae al primer día con funciones. |
+| Verificar la fila de días y que al elegir uno se ven solo sus funciones | Automatizada, y a mano contra la aplicación en marcha | Los 7 días de la semana aparecen en fila, con exactamente uno marcado. Pidiendo el domingo 16 aparecen sus 6 funciones y ninguna del sábado 15. Un día fuera de la semana, o escrito a mano en la dirección, cae al primer día con funciones. |
+| Verificar que un día ya pasado se muestra apagado y no se puede elegir | Automatizada, con el reloj puesto en el sábado 15 a las 22:00 | Los 7 días siguen a la vista; jueves, viernes y sábado quedan apagados y sin enlace, el resto sigue siendo elegible. |
 | Verificar que, elegido el día, hay una tarjeta por sala con su película y sus horarios | Automatizada, y a mano | Dos tarjetas —Sala 1 con 120 asientos, Sala 2 con 60—, cada una con su afiche, su título y 3 horarios. |
+| Verificar que los horarios se agrupan por formato dentro de cada sala | Automatizada, y a mano | El sábado 15 hay 4 grupos (dos salas × dos formatos) y exactamente 4 etiquetas de formato: una por grupo, no una pegada a cada hora. |
 | Cargar una función adjuntando un afiche y verlo en la cartelera del cliente | Automatizada, y a mano contra la aplicación en marcha | El archivo queda guardado en `datos/afiches/` con un nombre puesto por el sistema, la película queda apuntando a él, y la cartelera lo muestra. |
 | Cargar una película sin adjuntar afiche | Automatizada | La función se carga igual y la cartelera muestra el bloque con el título en lugar de la imagen, sin romperse. |
 | Como cliente, verificar que la cartelera dice de qué tamaño es cada sala | Automatizada, y a mano contra la aplicación en marcha | Cada función muestra `Sala 1 · 120 asientos` o `Sala 2 · 60 asientos`. Antes solo decía "Sala 1" y "Sala 2", y no había forma de saber cuál era la grande sin abrir el mapa. |
@@ -237,6 +241,19 @@ al respecto**, ni la del Caso práctico 3 ni la del 4 ni el `PROMPT.md`— y con
   etiqueta de doblada o subtitulada en tamaño menor al de la hora, porque es un dato de apoyo.
 - Los datos de prueba pasaron de 4 películas a **2**, una por sala, con sus 21 funciones cada una.
   Los otros dos afiches quedan en `afiches-de-muestra/` para probar la subida a mano.
+
+*Quinta revisión: los días en fila, no en un desplegable.* La estudiante encontró una cartelera de
+cine real y prefirió su distribución. Se tomó **solo la distribución**, sin los datos que ese
+ejemplo trae y que nuestro sistema no guarda —género, duración, clasificación, sinopsis— ni el
+buscador y los filtros, que además no filtrarían nada con dos películas en cartel:
+
+- Los siete días de la semana pasan a estar **en fila arriba, todos a la vista**, cada uno un
+  enlace. Se ve la semana entera de un vistazo y se elige en un clic, sin el segundo clic que
+  pedía el desplegable, y sigue sin usarse nada de JavaScript.
+- Los días que ya pasaron **se muestran apagados en vez de esconderse**: así la fila no cambia de
+  tamaño y el cliente conserva la referencia de en qué parte de la semana está.
+- Los horarios pasaron a **agruparse por formato** dentro de cada sala: la etiqueta "Subtitulada"
+  aparece una vez por grupo y no pegada a cada hora, que era lo que la ensuciaba.
 
 *Lo que a propósito NO se construyó,* para no meter andamiaje fuera de su vertical slice: no
 existe la tabla de Compras (la crea el vertical slice 2, con la primera reserva) ni el estado

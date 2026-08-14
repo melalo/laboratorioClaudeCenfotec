@@ -41,6 +41,12 @@ const MESES = [
   'julio', 'agosto', 'setiembre', 'octubre', 'noviembre', 'diciembre',
 ];
 
+// '2026-08-19' -> { corto: 'mié', numero: 19 }, para la fila de dias de la cartelera.
+export function partesDelDia(dia) {
+  const [anio, mes, numero] = dia.split('-').map(Number);
+  return { corto: DIAS[new Date(anio, mes - 1, numero).getDay()].slice(0, 3), numero };
+}
+
 // '2026-08-19 20:00' -> 'miércoles 19 de agosto, 20:00'
 export function fechaLegible(fechaHora) {
   const [fecha, hora] = fechaHora.split(' ');

@@ -12,7 +12,7 @@ import multer from 'multer';
 import { carpetaAfichesDe } from './base-de-datos.js';
 import { configuracion, raizDelProyecto } from './config.js';
 import { coincide } from './contrasenas.js';
-import { comoTextoFechaHora, semanaVigente } from './semana.js';
+import { comoTextoFechaHora, diasDeLaSemana, semanaVigente } from './semana.js';
 import * as vistas from './vistas.js';
 
 const FORMATOS = ['doblada', 'subtitulada'];
@@ -46,10 +46,18 @@ export function agruparPorSala(funciones) {
 
     let pelicula = sala.peliculas.find((p) => p.id === funcion.pelicula_id);
     if (!pelicula) {
-      pelicula = { id: funcion.pelicula_id, nombre: funcion.pelicula, afiche: funcion.afiche, funciones: [] };
+      pelicula = { id: funcion.pelicula_id, nombre: funcion.pelicula, afiche: funcion.afiche, formatos: [] };
       sala.peliculas.push(pelicula);
     }
-    pelicula.funciones.push(funcion);
+
+    // Los horarios se agrupan por formato, para no repetir "Subtitulada" en cada hora
+    // (DISENO.md, "Como se muestran los horarios de una sala").
+    let grupo = pelicula.formatos.find((f) => f.formato === funcion.formato);
+    if (!grupo) {
+      grupo = { formato: funcion.formato, funciones: [] };
+      pelicula.formatos.push(grupo);
+    }
+    grupo.funciones.push(funcion);
   }
 
   return salas;
@@ -148,14 +156,17 @@ export function crearServidor(db, opciones = {}) {
     const semana = semanaVigente(ahora());
     const estaMomento = comoTextoFechaHora(ahora());
 
-    const dias = consultas.diasConFunciones
-      .all(semana.inicio, `${semana.fin} 23:59`, estaMomento)
-      .map((fila) => fila.dia);
+    // La fila de arriba muestra los siete dias de la semana, siempre. Los que ya no
+    // tienen funciones por dar van apagados, no se esconden (DISENO.md).
+    const conFunciones = new Set(
+      consultas.diasConFunciones.all(semana.inicio, `${semana.fin} 23:59`, estaMomento).map((f) => f.dia),
+    );
+    const dias = diasDeLaSemana(ahora()).map((dia) => ({ dia, disponible: conFunciones.has(dia) }));
 
-    // Si piden un dia que no esta en la lista —porque ya paso, porque es de otra semana
-    // o porque lo escribieron a mano—, se muestra el primero que si tiene funciones.
+    // Si piden un dia sin funciones —porque ya paso, porque es de otra semana o porque
+    // lo escribieron a mano—, se muestra el primero que si tenga.
     const pedido = String(req.query.dia ?? '');
-    const diaElegido = dias.includes(pedido) ? pedido : dias[0];
+    const diaElegido = conFunciones.has(pedido) ? pedido : dias.find((d) => d.disponible)?.dia;
 
     const funciones = diaElegido ? consultas.funcionesDelDia.all(diaElegido, estaMomento) : [];
 

@@ -285,39 +285,94 @@ header.container nav {
 
 /* ---------------------------------------------------------- 4. Tarjetas y avisos */
 
-/* Selector del dia. Es un formulario de verdad: el dia viaja en la direccion de la
-   pagina, sin nada de JavaScript (DISENO.md). */
-.selector-dia {
+/* Los siete dias de la semana en fila, cada uno un enlace, pegados entre si y
+   repartiendose el ancho por igual: quedan uno al lado del otro en cualquier tamano de
+   pantalla, sin separacion, sin partirse en dos renglones y sin barra de deslizamiento. */
+.dias-semana {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
+  gap: 0;
   margin: 0 0 calc(var(--cine-base) * 1.5);
 }
 
-.selector-dia label {
+.dia-chip {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 4px;
+  background: var(--cine-surface-container);
+  border: 1px solid var(--cine-outline-variant);
+  border-radius: 0;
+  text-decoration: none;
+  color: var(--cine-on-surface);
+}
+
+/* Cada dia monta su borde izquierdo sobre el derecho del anterior, para que entre dos
+   dias quede una sola linea y no dos pegadas. */
+.dia-chip + .dia-chip {
+  margin-left: -1px;
+}
+
+/* Solo se redondean las esquinas de los extremos: la fila se lee como una sola pieza. */
+.dia-chip:first-child {
+  border-top-left-radius: var(--cine-round-lg);
+  border-bottom-left-radius: var(--cine-round-lg);
+}
+
+.dia-chip:last-child {
+  border-top-right-radius: var(--cine-round-lg);
+  border-bottom-right-radius: var(--cine-round-lg);
+}
+
+/* El que esta arriba tiene que tapar al vecino, o su borde queda a medias. */
+.dia-chip:hover,
+.dia-chip.elegido {
+  position: relative;
+  z-index: 1;
+}
+
+.dia-chip:hover {
+  border-color: var(--cine-primary);
+}
+
+@media (min-width: 480px) {
+  .dia-chip {
+    padding: 10px 12px;
+  }
+}
+
+.dia-chip .dia-corto {
   font-family: var(--cine-dato);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--cine-outline);
-  margin: 0;
 }
 
-.selector-dia select,
-.selector-dia button {
-  width: auto;
-  margin: 0;
+.dia-chip .dia-numero {
+  font-family: var(--cine-titulo);
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 26px;
 }
 
-.selector-dia select {
-  min-width: 14rem;
-  padding: 8px 32px 8px 12px;
+.dia-chip.elegido {
+  background: var(--cine-primary);
+  border-color: var(--cine-primary);
+  color: var(--cine-on-primary);
 }
 
-.selector-dia button {
-  padding: 8px 20px;
+.dia-chip.elegido .dia-corto {
+  color: var(--cine-on-primary);
+}
+
+/* Un dia que ya paso sigue a la vista, pero apagado y sin poder elegirse. */
+.dia-chip.apagado {
+  opacity: 0.35;
+  cursor: default;
 }
 
 /* Tarjeta de sala: el encabezado dice que sala es y de que tamano, y adentro va la
@@ -431,10 +486,18 @@ article.sala {
   color: var(--cine-outline);
 }
 
-/* --- Los horarios del dia --- */
-/* Sin recuadro: solo la hora, en texto, y al lado la etiqueta de formato en chico. Con
-   tres o cuatro horarios por sala, un boton por cada uno llena la pantalla de cajas
-   (DISENO.md, "Como se muestra cada horario"). */
+/* --- Los horarios del dia, agrupados por formato --- */
+/* La etiqueta del formato va una vez por grupo, arriba, y debajo solo las horas
+   (DISENO.md, "Como se muestran los horarios de una sala"). */
+
+.grupo-formato {
+  margin-bottom: 12px;
+}
+
+.grupo-formato .pastilla {
+  display: inline-block;
+  margin-bottom: 6px;
+}
 
 .horarios {
   display: flex;
@@ -446,7 +509,6 @@ article.sala {
 .horario {
   display: inline-flex;
   align-items: baseline;
-  gap: 6px;
   padding: 0;
   border: 0;
   background: none;

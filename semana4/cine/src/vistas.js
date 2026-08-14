@@ -1,7 +1,7 @@
 // Las pantallas. Son HTML simple armado con texto, servido por el mismo servidor,
 // sin herramientas de compilacion (DISENO.md, "Otras decisiones").
 
-import { fechaLegible } from './semana.js';
+import { fechaLegible, partesDelDia } from './semana.js';
 
 // Todo lo que viene de afuera (nombres de peliculas, usuarios) pasa por aca antes de
 // entrar al HTML, para que un nombre con simbolos no pueda romper ni alterar la pagina.
@@ -94,28 +94,31 @@ export function carteleraCliente({ salas, dias, diaElegido, semana }) {
   const encabezado = `<p class="semana">Semana del ${escapar(soloElDia(semana.inicio))}
     al ${escapar(soloElDia(semana.fin))}.</p>`;
 
-  if (dias.length === 0) {
+  // Los siete dias en fila, cada uno un enlace: se ve la semana entera de un vistazo y
+  // se elige en un clic, sin nada de JavaScript. El dia viaja en la direccion de la
+  // pagina, asi que la cartelera de un dia se puede compartir por enlace (DISENO.md).
+  const filaDeDias = `
+    <nav class="dias-semana" aria-label="Días de la semana">
+      ${dias
+        .map(({ dia, disponible }) => {
+          const { corto, numero } = partesDelDia(dia);
+          const adentro = `<span class="dia-corto">${escapar(corto)}</span><span class="dia-numero">${numero}</span>`;
+          if (!disponible) {
+            return `<span class="dia-chip apagado" title="Ya no quedan funciones este día">${adentro}</span>`;
+          }
+          const marcado = dia === diaElegido ? ' elegido' : '';
+          const actual = dia === diaElegido ? ' aria-current="page"' : '';
+          return `<a class="dia-chip${marcado}" href="/?dia=${escapar(dia)}"${actual}>${adentro}</a>`;
+        })
+        .join('')}
+    </nav>`;
+
+  if (!diaElegido) {
     return pagina({
       titulo: 'Cartelera',
-      contenido: `${encabezado}<p>Por ahora no hay funciones disponibles en esta semana.</p>`,
+      contenido: `${encabezado}${filaDeDias}<p>Por ahora no hay funciones disponibles en esta semana.</p>`,
     });
   }
-
-  // El dia elegido viaja en la direccion de la pagina, asi que esta pantalla se puede
-  // compartir por enlace y no hace falta nada de JavaScript (DISENO.md).
-  const selector = `
-    <form class="selector-dia" method="get" action="/">
-      <label for="dia">Función del día</label>
-      <select name="dia" id="dia">
-        ${dias
-          .map(
-            (dia) =>
-              `<option value="${escapar(dia)}"${dia === diaElegido ? ' selected' : ''}>${escapar(soloElDia(dia))}</option>`,
-          )
-          .join('')}
-      </select>
-      <button type="submit">Ver</button>
-    </form>`;
 
   const tarjetas = salas
     .map(
@@ -132,15 +135,20 @@ export function carteleraCliente({ salas, dias, diaElegido, semana }) {
         ${dibujarAfiche(pelicula)}
         <div class="datos-pelicula">
           <h3>${escapar(pelicula.nombre)}</h3>
-          <div class="horarios">${pelicula.funciones
+          ${pelicula.formatos
             .map(
-              (f) => `
-            <a class="horario" href="/funciones/${f.id}/asientos">
-              <span class="hora">${escapar(f.fecha_hora.slice(11))}</span>
-              <span class="pastilla ${escapar(f.formato)}">${escapar(conMayuscula(f.formato))}</span>
-            </a>`,
+              (grupo) => `
+          <div class="grupo-formato">
+            <span class="pastilla ${escapar(grupo.formato)}">${escapar(conMayuscula(grupo.formato))}</span>
+            <div class="horarios">${grupo.funciones
+              .map(
+                (f) =>
+                  `<a class="horario" href="/funciones/${f.id}/asientos"><span class="hora">${escapar(f.fecha_hora.slice(11))}</span></a>`,
+              )
+              .join('')}</div>
+          </div>`,
             )
-            .join('')}</div>
+            .join('')}
         </div>
       </div>`,
         )
@@ -149,7 +157,7 @@ export function carteleraCliente({ salas, dias, diaElegido, semana }) {
     )
     .join('');
 
-  return pagina({ titulo: 'Cartelera', contenido: `${encabezado}${selector}${tarjetas}` });
+  return pagina({ titulo: 'Cartelera', contenido: `${encabezado}${filaDeDias}${tarjetas}` });
 }
 
 export function mapaDeAsientos({ funcion, filas }) {

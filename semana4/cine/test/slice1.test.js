@@ -460,20 +460,62 @@ test('la cartelera muestra una tarjeta por sala, con la pelicula de ese dia', as
   }
 });
 
-test('la cartelera ofrece un desplegable con los dias de la semana que todavia tienen funciones', async () => {
+test('la cartelera muestra los siete dias de la semana en fila, con el elegido marcado', async () => {
   const app = await levantarApp();
   try {
-    const html = await (await app.navegador().ver('/')).text();
+    const html = await (await app.navegador().ver('/?dia=2026-08-16')).text();
 
-    assert.match(html, /<select name="dia"/, 'deberia haber una lista desplegable de dias');
-    const opciones = (html.match(/<option value="2026-08-/g) ?? []).length;
-    assert.equal(opciones, 7, 'los siete dias de la semana vigente todavia tienen funciones');
+    const chips = (html.match(/class="dia-chip/g) ?? []).length;
+    assert.equal(chips, 7, 'la semana entera tiene que estar a la vista, no escondida');
+
+    const elegidos = (html.match(/class="dia-chip elegido"/g) ?? []).length;
+    assert.equal(elegidos, 1, 'exactamente un dia queda marcado como elegido');
   } finally {
     await app.cerrar();
   }
 });
 
-test('al elegir un dia en el desplegable, solo se ven las funciones de ese dia', async () => {
+test('un dia de la semana que ya paso se muestra apagado y no se puede elegir', async () => {
+  // Sabado 15 a las 22:00: la ultima funcion del dia era a las 21:00, asi que el
+  // jueves, el viernes y el sabado ya no tienen nada por dar.
+  const app = await levantarApp({ hoy: new Date(2026, 7, 15, 22, 0) });
+  try {
+    const html = await (await app.navegador().ver('/')).text();
+
+    assert.equal((html.match(/class="dia-chip/g) ?? []).length, 7, 'siguen estando los siete dias');
+    assert.equal(
+      (html.match(/class="dia-chip apagado"/g) ?? []).length,
+      3,
+      'jueves, viernes y sabado ya pasaron',
+    );
+    assert.doesNotMatch(html, /href="\/\?dia=2026-08-14"/, 'un dia pasado no deberia ser un enlace');
+    assert.match(html, /href="\/\?dia=2026-08-17"/, 'un dia futuro si deberia serlo');
+  } finally {
+    await app.cerrar();
+  }
+});
+
+test('dentro de cada sala, los horarios estan agrupados por formato', async () => {
+  const app = await levantarApp();
+  try {
+    const html = await (await app.navegador().ver('/?dia=2026-08-15')).text();
+
+    // Ese dia la Sala 1 da dos funciones dobladas y una subtitulada: dos grupos.
+    const grupos = (html.match(/class="grupo-formato"/g) ?? []).length;
+    assert.equal(grupos, 4, 'dos salas con dos formatos cada una ese dia');
+
+    // La etiqueta del formato aparece una vez por grupo, no una por hora.
+    assert.equal(
+      (html.match(/class="pastilla /g) ?? []).length,
+      grupos,
+      'la etiqueta de formato va una vez por grupo, no pegada a cada hora',
+    );
+  } finally {
+    await app.cerrar();
+  }
+});
+
+test('al elegir un dia en la fila, solo se ven las funciones de ese dia', async () => {
   const app = await levantarApp();
   try {
     const delDomingo = app.db
@@ -487,7 +529,11 @@ test('al elegir un dia en el desplegable, solo se ven las funciones de ese dia',
 
     const html = await (await app.navegador().ver('/?dia=2026-08-16')).text();
 
-    assert.match(html, /domingo 16 de agosto/);
+    // El dia elegido se reconoce en la fila de arriba, marcado.
+    const marcado = html.slice(html.indexOf('class="dia-chip elegido"'), html.indexOf('class="dia-chip elegido"') + 220);
+    assert.match(marcado, /dom/, 'el dia marcado deberia ser un domingo');
+    assert.match(marcado, />16</, 'y deberia ser el 16');
+
     for (const id of delDomingo) {
       assert.ok(html.includes(`/funciones/${id}/asientos`), `falta la funcion ${id} del domingo`);
     }
