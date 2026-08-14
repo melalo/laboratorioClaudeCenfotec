@@ -99,6 +99,14 @@ estaban en la consigna original del Caso práctico 3 y se incorporaron hoy:
 - **La cartelera pasó a verse un día a la vez**, con un desplegable de días, a pedido de la
   estudiante. Se construyó sin nada de JavaScript: el día viaja en la dirección de la página, así
   que la pantalla se puede compartir por enlace.
+- **El desplegable duró poco: los días pasaron a una fila, todos a la vista.** La estudiante
+  encontró una cartelera de cine real y prefirió su distribución. Se tomó **solo la distribución**:
+  quedaron afuera el buscador, los filtros y los datos que el sistema no guarda (género, duración,
+  clasificación, sinopsis), porque agregarlos significaba cambiar la especificación y el modelo de
+  datos, y ninguna consigna los pide. Antes de decidirlo se le expuso el costo: cada vuelta más
+  sobre el vertical slice 1 retrasa los slices 2 y 3, que son los que faltan para poder entregar.
+  De paso, agrupar los horarios por formato resolvió mejor un pedido anterior de la estudiante: la
+  etiqueta "Subtitulada" aparece ahora una vez por grupo en lugar de pegada a cada hora.
 - **La estudiante ajustó directamente el ritmo base de la hoja de estilos** de 8px a 16px. Se
   respetó sin revertirlo.
 
@@ -116,8 +124,9 @@ estaban en la consigna original del Caso práctico 3 y se incorporaron hoy:
   vivo, en vez de asumir que el pedido de apagado bastó. Ocurrió dos veces antes de establecerse
   el control.
 
-**Estado al cierre de la sesión:** vertical slice 1 cerrado, con 42 comprobaciones automatizadas
+**Estado al cierre de la sesión:** vertical slice 1 cerrado, con **44 comprobaciones automatizadas**
 que pasan y su evidencia anotada en `PLAN.md`. La comprobación de "arrancar desde cero siguiendo
 únicamente el `README.md`" se volvió a correr al final, ya con todas las dependencias, tipografías
-y afiches que se fueron sumando durante el día. Los vertical slices 2 y 3 quedan pendientes: la
-consigna exige al menos tres piezas cerradas.
+y afiches que se fueron sumando durante el día. El trabajo quedó en dos commits: uno con el slice
+cerrado y otro con el ajuste de la cartelera a la fila de días. Los vertical slices 2 y 3 quedan
+pendientes: la consigna exige al menos tres piezas cerradas.
