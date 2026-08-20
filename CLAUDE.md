@@ -18,7 +18,7 @@ explicaciones no son un extra: son parte del entregable.
 ## Explicar a fondo, sin asumir
 
 - **Explicá todo con detalle. Nunca asumas que entiendo**, sobre todo cuando se trata de
-  programación, lenguajes, herramientas o cualquier concepto técnico.
+  programación, lenguajes, herramientas o cualquier concepto técnico. Explicame en lenguaje simple y de manera puntual.
 - Un término técnico se explica en el momento en que aparece, en la misma frase, en palabras
   simples. No se deja para después ni se da por sabido.
 - Si algo se puede explicar con una analogía cotidiana, mejor.
@@ -38,6 +38,8 @@ explicaciones no son un extra: son parte del entregable.
 - **Nada se da por supuesto.** Cualquier restricción, límite o supuesto que se adopte queda
   escrito como decisión, con su razón, en el documento que corresponda. Un supuesto que solo vive
   en la cabeza de quien lo tomó no existe.
+  - Cuando me preguntes cosas, vamos una a le vez, una por una.
+
 
 ## Reglas del curso
 
