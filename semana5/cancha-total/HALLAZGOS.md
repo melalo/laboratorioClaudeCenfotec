@@ -10,7 +10,7 @@ como lo entregó el proveedor (commit `65ce4b4`).
 ## Estado de la suite
 
 ```
-48 pruebas · 36 en verde · 0 fallos · 12 marcadas como fallo esperado
+48 pruebas · 40 en verde · 0 fallos · 8 marcadas como fallo esperado
 ```
 
 Eran 40 cuando se escribió la suite. Las 8 que se sumaron son las que **no se podían escribir**
@@ -38,8 +38,8 @@ mismo antes y después.
 |---|---|---|---|
 | **H-01** ✅ **CERRADO** | **E-06, E-10** · Un bloque que empieza entre las 17:00 y las 21:00 cuesta ₡20.000, porque a las 17:00 se enciende la luz | Cobraba ₡15.000 a las 17:00 y solo subía a ₡20.000 desde las 18:00. Al cliente frecuente le cobraba ₡13.500 en vez de ₡18.000. Estaba escrito en los tres lugares que calculaban la tarifa, así que el defecto aparecía tres veces | `pruebas/tarifas.test.js::P-03`, `::P-05`, `pruebas/descuento.test.js::P-14` |
 | **H-02** | **E-08** · Para el descuento solo cuentan las reservas activas; las canceladas no | El conteo del mes incluye las canceladas, así que quien aparta y cancela llega al 10% sin haber jugado | `pruebas/descuento.test.js::P-10` |
-| **H-03** | **E-11** · El teléfono es obligatorio | Se puede reservar sin teléfono. Efecto de segundo orden: el conteo del descuento agrupa por teléfono, así que **todas las reservas sin teléfono se suman entre sí** y le regalan el 10% a un desconocido | `pruebas/datos-de-la-reserva.test.js::P-15` |
-| **H-04** | **E-12** · El teléfono son exactamente 8 dígitos | No se revisa nada: entra un teléfono de 3 dígitos, de 20, o con letras. El cliente deja de ser ubicable, que es para lo que se pide el teléfono | `pruebas/datos-de-la-reserva.test.js::P-16`, `::P-17`, `::P-18` |
+| **H-03** ✅ **CERRADO** | **E-11** · El teléfono es obligatorio | Se podía reservar sin teléfono. Efecto de segundo orden: el conteo del descuento agrupa por teléfono, así que **todas las reservas sin teléfono se sumaban entre sí** y le regalaban el 10% a un desconocido | `pruebas/datos-de-la-reserva.test.js::P-15` |
+| **H-04** ✅ **CERRADO** | **E-12** · El teléfono son exactamente 8 dígitos | No se revisaba nada: entraba un teléfono de 3 dígitos, de 20, o con letras. El cliente dejaba de ser ubicable, que es para lo que se pide el teléfono | `pruebas/datos-de-la-reserva.test.js::P-16`, `::P-17`, `::P-18` |
 | **H-05** | **E-40** · La fecha tiene que existir en el calendario | Solo se revisa la forma «cuatro dígitos, guion, dos, guion, dos». Se acepta el 30 de febrero, y la reserva queda en un día al que nadie puede llegar | `pruebas/datos-de-la-reserva.test.js::P-23` |
 | **H-06** | **E-19** · Solo se reserva un bloque que todavía no empezó | Se acepta cualquier fecha, incluso del año pasado | `pruebas/reservar-en-el-tiempo.test.js::P-29`, `pruebas/reservar-a-tiempo.test.js::P-46`, `::P-47` |
 | **H-07** | **E-35** · El nombre y el teléfono se muestran siempre como texto | Se insertan en la página sin limpiarlos, así que un nombre con signos de código lo ejecuta el navegador en vez de mostrarlo. En el caso leve descuadra la pantalla; en el grave, un nombre de cliente puede dejar código que corre cuando la administradora abre la lista del día | `pruebas/lo-que-se-ve.test.js::P-38` |
@@ -164,6 +164,44 @@ P-02 es la que importa vigilar: si el arreglo se hubiera pasado de la raya y ade
 las 16:00, se habría puesto roja.
 
 Estado de la suite: de `pass 33 / todo 15` a `pass 36 / todo 12`.
+
+### H-03 y H-04 · el teléfono no era obligatorio ni se validaba — **cerrados** el 2026-08-23
+
+Los dos se cerraron con la misma validación, porque son la misma regla partida en dos: el teléfono
+es obligatorio (E-11) y son exactamente 8 dígitos (E-12). Se sumaron cuatro líneas a las
+validaciones que ya existían al crear la reserva, con dos mensajes distintos según el caso: falta,
+o no tiene la forma correcta.
+
+**Esta pareja no tenía deuda de estructura en el camino, y no se inventó ninguna.** Las
+validaciones ya estaban todas juntas en un solo lugar y la nueva entró al lado de las otras.
+
+Efecto de segundo orden que se cierra de arrastre: el conteo del descuento agrupa por teléfono, y
+con el teléfono vacío permitido, las reservas sin teléfono de personas distintas se sumaban entre
+sí. Ya no puede volver a pasar, porque no se puede crear una reserva sin teléfono.
+
+La evidencia de que las pruebas no se ablandaron: en el archivo de prueba cambiaron **cuatro
+líneas**, y lo único que cambió en cada una fue que se le quitó la marca de fallo esperado. Estas
+cuatro pruebas están escritas en una sola línea, así que el diff no puede ser «cero agregadas»
+como en los cierres anteriores; lo que se compara es el contenido:
+
+```
+-test('P-15 · sin teléfono no se crea la reserva', { todo: 'H-03' }, async () => {
++test('P-15 · sin teléfono no se crea la reserva', async () => {
+```
+
+El nombre, el cuerpo y las aserciones quedaron idénticos en las cuatro.
+
+```
+P-15  sin teléfono no se crea la reserva      ✔ (era rojo)
+P-16  un teléfono de 7 dígitos se rechaza     ✔ (era rojo)
+P-17  un teléfono de 9 dígitos se rechaza     ✔ (era rojo)
+P-18  un teléfono con letras se rechaza       ✔ (era rojo)
+P-19  un teléfono de 8 dígitos se acepta      ✔   ← el freno
+```
+
+P-19 es la que vigila que la validación no se pase de dura y rechace un teléfono válido.
+
+Estado de la suite: de `pass 36 / todo 12` a `pass 40 / todo 8`.
 
 ## Cómo se cierra un hallazgo
 

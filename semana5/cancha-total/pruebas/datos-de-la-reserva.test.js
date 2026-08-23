@@ -14,7 +14,7 @@ const s = require('./servidor-de-pruebas');
 before(s.levantarLaAplicacion);
 after(s.bajarLaAplicacion);
 
-test('P-15 · sin teléfono no se crea la reserva', { todo: 'H-03' }, async () => {
+test('P-15 · sin teléfono no se crea la reserva', async () => {
   // El teléfono es la forma de ubicar al cliente y de reconocerlo como frecuente, así que es
   // obligatorio. Falla si el teléfono vuelve a ser opcional, que es lo que pasa hoy.
   const fecha = s.fechaEnDias(50);
@@ -22,21 +22,21 @@ test('P-15 · sin teléfono no se crea la reserva', { todo: 'H-03' }, async () =
   assert.equal(s.buscarReserva({ cancha: 1, fecha, hora: 10 }), undefined);
 });
 
-test('P-16 · un teléfono de 7 dígitos se rechaza', { todo: 'H-04' }, async () => {
+test('P-16 · un teléfono de 7 dígitos se rechaza', async () => {
   // Falla si se acepta un teléfono más corto que 8 dígitos. Hoy se acepta cualquier cosa.
   const fecha = s.fechaEnDias(51);
   await s.reservar({ cancha: 1, fecha, hora: 10, cliente: 'Corto', telefono: '8811223' });
   assert.equal(s.buscarReserva({ cancha: 1, fecha, hora: 10 }), undefined);
 });
 
-test('P-17 · un teléfono de 9 dígitos se rechaza', { todo: 'H-04' }, async () => {
+test('P-17 · un teléfono de 9 dígitos se rechaza', async () => {
   // Falla si se acepta un teléfono más largo que 8 dígitos.
   const fecha = s.fechaEnDias(52);
   await s.reservar({ cancha: 1, fecha, hora: 10, cliente: 'Largo', telefono: '881122334' });
   assert.equal(s.buscarReserva({ cancha: 1, fecha, hora: 10 }), undefined);
 });
 
-test('P-18 · un teléfono con letras se rechaza', { todo: 'H-04' }, async () => {
+test('P-18 · un teléfono con letras se rechaza', async () => {
   // Son 8 dígitos, no 8 caracteres. Falla si se acepta algo que no sean números.
   const fecha = s.fechaEnDias(53);
   await s.reservar({ cancha: 1, fecha, hora: 10, cliente: 'Con letras', telefono: '8811ab33' });

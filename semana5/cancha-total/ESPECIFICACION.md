@@ -52,8 +52,8 @@ arregla en este documento: se convierte en un hallazgo con su prueba en rojo.
 
 | # | Afirmación | Fuente | ¿Lo cumple hoy? |
 |---|---|---|---|
-| E-11 | Una reserva lleva cancha, fecha, hora, nombre del cliente y teléfono. **Los cinco son obligatorios.** | ADM | **no** — el teléfono se puede dejar vacío |
-| E-12 | El teléfono son **exactamente 8 dígitos**. Es la forma de ubicar al cliente y de reconocerlo como frecuente. | ADM | **no** — el sistema acepta cualquier cosa: vacío, letras, 3 dígitos o 20 |
+| E-11 | Una reserva lleva cancha, fecha, hora, nombre del cliente y teléfono. **Los cinco son obligatorios.** | ADM | **sí, desde el 2026-08-23.** Hasta entonces el teléfono se podía dejar vacío; era el hallazgo H-03, ya cerrado |
+| E-12 | El teléfono son **exactamente 8 dígitos**. Es la forma de ubicar al cliente y de reconocerlo como frecuente. | ADM | **sí, desde el 2026-08-23.** Hasta entonces aceptaba cualquier cosa: vacío, letras, 3 dígitos o 20; era el hallazgo H-04, ya cerrado |
 | E-13 | La cancha tiene que ser 1 o 2; cualquier otro valor se rechaza. | SIS | sí |
 | E-14 | La hora tiene que ser un bloque entero entre 8 y 21; cualquier otro valor se rechaza. | SIS | sí |
 | E-15 | Cuando falta un dato o viene mal, la reserva **no se crea** y se muestra la lista de todo lo que hay que corregir. | SIS | sí |
@@ -125,18 +125,16 @@ aceptar una fecha inexistente sea correcto. Conserva su número para no renumera
 
 ## Resumen de lo que no se cumple
 
-Nueve afirmaciones no las cumple el sistema. Cada una tiene su prueba escrita, en rojo y marcada
+Siete afirmaciones no las cumple el sistema. Cada una tiene su prueba escrita, en rojo y marcada
 como fallo esperado, y su entrada en [`HALLAZGOS.md`](HALLAZGOS.md) con su clase.
 
-Eran trece cuando se levantó la suite. Las cuatro que salieron de esta lista se cerraron el
-2026-08-23 y su evidencia está en `HALLAZGOS.md`: E-21, E-22 y E-23, la regla de las 24 horas, y
-E-06, la hora en que se enciende la luz.
+Eran trece cuando se levantó la suite. Las seis que salieron de esta lista se cerraron el
+2026-08-23 y su evidencia está en `HALLAZGOS.md`: E-21, E-22 y E-23, la regla de las 24 horas;
+E-06, la hora en que se enciende la luz; y E-11 y E-12, el teléfono obligatorio de 8 dígitos.
 
 | Afirmación | Qué falla |
 |---|---|
 | E-08 | El descuento cuenta reservas canceladas |
-| E-11 | El teléfono no es obligatorio |
-| E-12 | El teléfono no se valida como 8 dígitos |
 | E-19 | Se puede reservar en el pasado |
 | E-20 | Se puede reservar un bloque que ya empezó |
 | E-33 | El precio que se muestra no incluye el descuento |

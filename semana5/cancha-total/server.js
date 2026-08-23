@@ -293,6 +293,15 @@ app.post('/reservas', (req, res) => {
     errores.push('Falta el nombre del cliente.');
   }
 
+  // El teléfono es obligatorio y son exactamente 8 dígitos: es la forma de ubicar al cliente y de
+  // reconocerlo como frecuente. Antes no se revisaba nada, así que entraba vacío, con letras, con
+  // 3 dígitos o con 20 (hallazgos H-03 y H-04).
+  if (!telefono) {
+    errores.push('Falta el teléfono.');
+  } else if (!/^\d{8}$/.test(telefono)) {
+    errores.push('El teléfono tiene que ser de 8 dígitos, sin espacios ni guiones.');
+  }
+
   if (errores.length > 0) {
     const listaErrores = errores.map(e => `<li>${e}</li>`).join('');
     const contenidoError = `<div class="error"><p>No se pudo crear la reserva:</p><ul>${listaErrores}</ul></div><p><a href="/">Volver</a></p>`;
