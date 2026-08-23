@@ -37,7 +37,6 @@ test('P-42 · con exactamente 24 horas de aviso, todavía se puede cancelar', as
 
 test(
   'P-43 · con 23 horas de aviso, una hora menos que el plazo, no se puede cancelar',
-  { todo: 'H-10' },
   async () => {
     // El otro lado del mismo borde. Falla mientras la regla compare solo días: hoy el sistema lo
     // cancela porque el partido es "de mañana", sin fijarse en que faltan 23 horas.

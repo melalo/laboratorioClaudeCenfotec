@@ -73,9 +73,9 @@ arregla en este documento: se convierte en un hallazgo con su prueba en rojo.
 
 | # | Afirmación | Fuente | ¿Lo cumple hoy? |
 |---|---|---|---|
-| E-21 | Se puede cancelar **hasta 24 horas antes de la hora de inicio del partido**. Con menos de 24 horas no hay cancelación y se cobra completo: si el partido es mañana a las 8:00 y ya son las 23:00 de hoy, no hay marcha atrás. | ADM | **no** — el sistema solo compara días, sin mirar la hora, así que acepta esa cancelación de las 23:00. Su rechazo de las reservas del mismo día, en cambio, sí coincide con esta condición: un partido de hoy está siempre a menos de 24 horas |
-| E-22 | El borde de E-21 es inclusive: si faltan **exactamente** 24 horas, todavía se puede cancelar. *(DEC: «hasta 24 horas antes» no dice qué pasa en el instante justo; se elige a favor del cliente porque la administradora describe el límite como un plazo que se respeta, no como uno que se pierde.)* | DEC | **no** — consecuencia de E-21 |
-| E-23 | Cuando la cancelación se rechaza, el mensaje dice el motivo verdadero: faltan menos de 24 horas para el inicio del partido. | ADM + DEC | **no** — hoy el mensaje habla de 24 horas pero la regla que aplicó fue otra, así que promete algo que no comprobó |
+| E-21 | Se puede cancelar **hasta 24 horas antes de la hora de inicio del partido**. Con menos de 24 horas no hay cancelación y se cobra completo: si el partido es mañana a las 8:00 y ya son las 23:00 de hoy, no hay marcha atrás. | ADM | **sí, desde el 2026-08-23.** Hasta entonces comparaba solo días y aceptaba esa cancelación de las 23:00; era el hallazgo H-10, ya cerrado |
+| E-22 | El borde de E-21 es inclusive: si faltan **exactamente** 24 horas, todavía se puede cancelar. *(DEC: «hasta 24 horas antes» no dice qué pasa en el instante justo; se elige a favor del cliente porque la administradora describe el límite como un plazo que se respeta, no como uno que se pierde.)* | DEC | **sí, desde el 2026-08-23**, junto con E-21 |
+| E-23 | Cuando la cancelación se rechaza, el mensaje dice el motivo verdadero: faltan menos de 24 horas para el inicio del partido. | ADM + DEC | **sí, desde el 2026-08-23.** El mensaje nombra el inicio del partido, que es lo que ahora se comprueba de verdad |
 | E-24 | Una reserva ya cancelada no se puede volver a cancelar, y se avisa que ya lo estaba. | SIS | sí |
 | E-25 | Una reserva cancelada **no se revive**. Si el cliente se arrepiente, se hace una reserva nueva, y el bloque puede estar tomado. *(DEC: la administradora no lo menciona; se confirma el comportamiento actual y se descarta agregar un botón de reactivar, que sería una función nueva.)* | DEC | sí |
 | E-26 | Cancelar una reserva que no existe no cambia nada y se avisa. | SIS | sí |
@@ -125,8 +125,11 @@ aceptar una fecha inexistente sea correcto. Conserva su número para no renumera
 
 ## Resumen de lo que no se cumple
 
-Trece afirmaciones no las cumple el sistema entregado. Cada una va a tener su prueba en rojo y su
-entrada en [`HALLAZGOS.md`](HALLAZGOS.md), con su clase:
+Diez afirmaciones no las cumple el sistema. Cada una tiene su prueba escrita, en rojo y marcada
+como fallo esperado, y su entrada en [`HALLAZGOS.md`](HALLAZGOS.md) con su clase.
+
+Eran trece cuando se levantó la suite. Las tres que salieron de esta lista —E-21, E-22 y E-23, la
+regla de las 24 horas— se cerraron el 2026-08-23 y su evidencia está en `HALLAZGOS.md`.
 
 | Afirmación | Qué falla |
 |---|---|
@@ -136,9 +139,6 @@ entrada en [`HALLAZGOS.md`](HALLAZGOS.md), con su clase:
 | E-12 | El teléfono no se valida como 8 dígitos |
 | E-19 | Se puede reservar en el pasado |
 | E-20 | Se puede reservar un bloque que ya empezó |
-| E-21 | La regla de las 24 horas no mira la hora, solo el día |
-| E-22 | El borde exacto de las 24 horas no existe |
-| E-23 | El mensaje de rechazo no dice el motivo que se comprobó |
 | E-33 | El precio que se muestra no incluye el descuento |
 | E-34 | No hay aviso de que falta el teléfono para saber el precio |
 | E-35 | El nombre y el teléfono se insertan en la página sin limpiarlos |

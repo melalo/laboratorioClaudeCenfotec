@@ -345,13 +345,22 @@ app.post('/reservas/:id/cancelar', (req, res) => {
     return res.send(layout('Error', `<div class="error">La reserva #${id} ya estaba cancelada.</div><p><a href="/dia/${reserva.fecha}">Volver</a></p>`));
   }
 
-  // Regla de las 24 horas: la reserva tiene que ser para una fecha futura.
-  const hoyFecha = hoyISO();
-  if (reserva.fecha > hoyFecha) {
+  // Regla de las 24 horas: se puede cancelar hasta 24 horas antes de la HORA de inicio del
+  // partido, no del día. Si faltan exactamente 24 horas, todavía alcanza.
+  //
+  // Antes esto comparaba solo fechas, y con eso alcanzaba que el partido fuera de un día
+  // posterior a hoy. Dejaba pasar el caso que la administradora describió: partido mañana a las
+  // 8:00, ya son las 23:00 de hoy, faltan 9 horas, y se cancelaba igual.
+  const VEINTICUATRO_HORAS_EN_MILISEGUNDOS = 24 * 60 * 60 * 1000;
+  const horaDeInicio = String(reserva.hora).padStart(2, '0');
+  const inicioDelPartido = new Date(`${reserva.fecha}T${horaDeInicio}:00:00`);
+  const loQueFalta = inicioDelPartido.getTime() - ahora().getTime();
+
+  if (loQueFalta >= VEINTICUATRO_HORAS_EN_MILISEGUNDOS) {
     db.prepare(`UPDATE reservas SET estado = 'cancelada' WHERE id = ?`).run(id);
     return res.send(layout('Cancelada', `<div class="ok">Reserva #${id} cancelada.</div><p><a href="/dia/${reserva.fecha}">Volver</a></p>`));
   } else {
-    return res.send(layout('Error', `<div class="error">La reserva #${id} no se puede cancelar: falta menos de 24 horas para el bloque.</div><p><a href="/dia/${reserva.fecha}">Volver</a></p>`));
+    return res.send(layout('Error', `<div class="error">La reserva #${id} no se puede cancelar: falta menos de 24 horas para el inicio del partido.</div><p><a href="/dia/${reserva.fecha}">Volver</a></p>`));
   }
 });
 
