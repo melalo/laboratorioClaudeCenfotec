@@ -55,7 +55,7 @@ mismo antes y después.
 | **H-12** | La base de datos está en una ruta fija dentro del código. La suite tiene que **apartar la base real y devolverla al terminar**, con el riesgo de perderla si una corrida se corta a la mitad | Sin prueba propia |
 | **H-13** | El puerto 3000 está fijo en el código. La verificación **no puede correr con otra aplicación en ese puerto**, y si algo más lo está usando, las pruebas le hablan a la aplicación equivocada. Pasó de verdad la primera vez que se corrió esta suite: contestó otra aplicación y todo dio resultados inventados. El andamio ahora lo detecta y aborta con un mensaje claro, pero rodearlo no es arreglarlo | Sin prueba propia |
 | **H-14** ✅ **PAGADA** | El reloj se lee directo del sistema y **no había manera de fijarlo desde una prueba**. Mientras fue así, H-10 no tenía prueba: cualquier prueba de la regla de las 24 horas daba un resultado distinto según la hora en que se corriera, y una prueba que falla una de cada diez corridas destruye la puerta de calidad. Bloqueaba también el borde de E-20. Era la deuda que estaba en el camino: sin pagarla, la regla de las 24 horas no se podía arreglar con red | Pagada el 2026-08-23. Las 8 pruebas que desbloqueó son la evidencia; ver más abajo |
-| **H-17** | La regla de «el teléfono son 8 dígitos» quedó escrita **dos veces**: en la validación al crear la reserva y en la cotización. La misma clase de deuda que H-15. *La introdujo el arreglo de H-08 y H-09 el 2026-08-23; se anota en lugar de taparse* | Sin prueba propia |
+| **H-17** ✅ **PAGADA** | La regla de «el teléfono son 8 dígitos» quedó escrita **dos veces**: en la validación al crear la reserva y en la cotización. La misma clase de deuda que H-15. *La introdujo el arreglo de H-08 y H-09 el 2026-08-23; se anota en lugar de taparse* | Sin prueba propia |
 | **H-16** ✅ **PAGADA** | El cálculo del precio con descuento vivía **dentro de la ruta que crea la reserva**, así que era el único lugar del programa capaz de calcular un precio completo. La cotización previa no podía preguntárselo y mostraba solo la tarifa del horario: de ahí venía que la pantalla dijera un número y se cobrara otro. *Es un caso concreto de H-11, y no salió de la suite: apareció el 2026-08-23 al abrirle el camino a H-08. Se anota igual, con su origen declarado, porque un hallazgo sin registro no existe* | Sin prueba propia: lo que lo delata son P-39 y P-40 |
 | **H-15** ✅ **PAGADA** | La tarifa estaba escrita **tres veces** —en la portada, al crear la reserva y en la cotización—. Corregir la hora de la luz obliga a tocar los tres lugares, y tocar uno solo deja la aplicación mostrando un precio y cobrando otro | `pruebas/tarifas.test.js::P-05` la comprueba de refilón: exige que los tres caminos digan lo mismo |
 
@@ -250,9 +250,28 @@ P-40  sin teléfono, se avisa que falta                 ✔ (era rojo)
 
 Estado de la suite: de `pass 40 / todo 8` a `pass 42 / todo 6`.
 
-**Este arreglo dejó una deuda nueva**, y queda anotada como H-17 en vez de taparse: la regla de los
-8 dígitos quedó escrita dos veces, en la validación del formulario y en la cotización. Es la misma
-clase de deuda que H-15. Se paga en el commit siguiente.
+**Este arreglo dejó una deuda nueva**, anotada como H-17 en vez de taparse: la regla de los 8
+dígitos quedó escrita dos veces, en la validación del formulario y en la cotización. Es la misma
+clase de deuda que H-15. Se pagó en el commit siguiente.
+
+### H-17 · la regla del teléfono estaba escrita dos veces — **pagada** el 2026-08-23
+
+La deuda duró un commit: la creó el arreglo de H-08 y H-09, y se pagó en el siguiente. La regla
+quedó en la función `telefonoEsValido(telefono)`, que preguntan la validación del formulario y la
+cotización.
+
+Suite igual antes y después, como corresponde a un cambio de estructura:
+
+```
+antes:   48 pruebas · pass 42 · fail 0 · todo 6 · código de salida 0
+después: 48 pruebas · pass 42 · fail 0 · todo 6 · código de salida 0
+```
+
+Vale la pena que quede escrito **cómo apareció**: no la encontró la suite ni una revisión posterior,
+sino que se vio al escribir el arreglo, se anotó con su número antes de pagarla, y se pagó aparte.
+La alternativa —arreglarla dentro del mismo commit— habría dejado un commit que cambia
+comportamiento y estructura a la vez, y ahí ya no se puede saber cuál de los dos rompió algo si
+algo se rompe.
 
 ## Cómo se cierra un hallazgo
 

@@ -71,6 +71,13 @@ function tarifaDelBloque(hora) {
 //
 // Devuelve el monto y si el descuento aplicó, porque quien muestra el precio necesita poder
 // explicar por qué es ese.
+// La forma de un teléfono válido, en un solo lugar: exactamente 8 dígitos, sin espacios ni
+// guiones. La preguntan la validación del formulario y la cotización, que necesita saber si ya
+// puede decir el precio con descuento.
+function telefonoEsValido(telefono) {
+  return /^\d{8}$/.test(telefono || '');
+}
+
 function precioDeLaReserva({ hora, fecha, telefono }) {
   const tarifa = tarifaDelBloque(hora);
 
@@ -328,7 +335,7 @@ app.post('/reservas', (req, res) => {
   // 3 dígitos o con 20 (hallazgos H-03 y H-04).
   if (!telefono) {
     errores.push('Falta el teléfono.');
-  } else if (!/^\d{8}$/.test(telefono)) {
+  } else if (!telefonoEsValido(telefono)) {
     errores.push('El teléfono tiene que ser de 8 dígitos, sin espacios ni guiones.');
   }
 
@@ -429,7 +436,7 @@ app.get('/api/cotizar', (req, res) => {
   // Sin el teléfono completo no hay manera de saber si el cliente es frecuente, así que se muestra
   // la tarifa del bloque y se dice que falta el teléfono para saber el total. Antes se mostraba el
   // número pelado, que podía no ser el que se cobraba, y no se avisaba (hallazgo H-09).
-  if (!/^\d{8}$/.test(telefono || '')) {
+  if (!telefonoEsValido(telefono)) {
     const tarifa = tarifaDelBloque(hora);
     return res.json({
       precio: tarifa,
