@@ -128,9 +128,9 @@ test('P-13 · con descuento, un bloque diurno queda cobrado en ₡13.500', async
 test(
   'P-14 · con descuento, un bloque de las 17:00 queda cobrado en ₡18.000',
   async () => {
-    // El 10% se aplica sobre la tarifa con luz, que a las 17:00 es ₡20.000. Falla mientras la
-    // hora de la luz esté equivocada: hoy cobra ₡13.500, o sea el descuento sobre la tarifa
-    // diurna.
+    // El 10% se aplica sobre la tarifa con luz, que a las 17:00 es ₡20.000. Falla si la hora de
+    // la luz vuelve a estar mal: el sistema entregado cobraba ₡13.500 acá, o sea el descuento
+    // sobre la tarifa diurna. Fue el hallazgo H-01.
     const mes = s.mesEnMeses(2);
     const telefono = '80000015';
     await prepararReservas(3, {

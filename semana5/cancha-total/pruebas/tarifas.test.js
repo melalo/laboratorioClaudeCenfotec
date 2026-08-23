@@ -29,7 +29,8 @@ test('P-02 · el bloque de las 16:00 cuesta ₡15.000, es el último diurno', as
 test(
   'P-03 · el bloque de las 17:00 cuesta ₡20.000: la luz ya está encendida',
   async () => {
-    // Falla si la luz se atrasa de las 17:00, que es justo lo que hace el sistema hoy.
+    // Falla si la luz se atrasa de las 17:00: el sistema entregado la encendía a las 18:00 y
+    // cobraba este bloque como diurno. Fue el hallazgo H-01.
     const cotizacion = await s.cotizar({ fecha: s.fechaEnDias(40), hora: 17 });
     assert.equal(cotizacion.precio, 20000);
   }
@@ -44,9 +45,9 @@ test('P-04 · el bloque de las 21:00 cuesta ₡20.000', async () => {
 test(
   'P-05 · a las 17:00 cobran ₡20.000 los tres caminos: la tabla, la cotización y la reserva',
   async () => {
-    // La tarifa está escrita en tres lugares distintos del código (H-15), así que hay que
-    // comprobar los tres. Falla si alguno de los tres se queda atrás cuando se corrija la hora
-    // de la luz: hoy fallan los tres.
+    // La tarifa estaba escrita en tres lugares distintos del código (H-15, ya pagada), así que
+    // esta prueba comprueba los tres. Falla si alguno se separa de los otros: es lo que dejaría
+    // la aplicación mostrando un precio y cobrando otro.
     const fecha = s.fechaEnDias(41);
 
     const inicio = await s.verPagina(`/?fecha=${fecha}`);
