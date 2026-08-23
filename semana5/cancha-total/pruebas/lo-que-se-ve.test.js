@@ -71,7 +71,6 @@ test('P-38 · un nombre con signos de código se muestra como texto', { todo: 'H
 
 test(
   'P-39 · el precio que se muestra antes de confirmar incluye el descuento',
-  { todo: 'H-08' },
   async () => {
     // Lo que se muestra tiene que ser lo que se cobra. Falla mientras la cotización mire solo el
     // horario y se olvide del cliente, que es lo que hace hoy: muestra ₡15.000 y cobra ₡13.500.
@@ -91,7 +90,6 @@ test(
 
 test(
   'P-40 · sin el teléfono completo, se avisa que falta para saber el precio',
-  { todo: 'H-09' },
   async () => {
     // Sin teléfono no se puede saber si hay descuento, así que la pantalla muestra la tarifa del
     // bloque y lo dice. Falla mientras se muestre un número pelado que puede no ser el que se

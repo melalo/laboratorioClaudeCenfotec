@@ -10,7 +10,7 @@ como lo entregó el proveedor (commit `65ce4b4`).
 ## Estado de la suite
 
 ```
-48 pruebas · 40 en verde · 0 fallos · 8 marcadas como fallo esperado
+48 pruebas · 42 en verde · 0 fallos · 6 marcadas como fallo esperado
 ```
 
 Eran 40 cuando se escribió la suite. Las 8 que se sumaron son las que **no se podían escribir**
@@ -43,8 +43,8 @@ mismo antes y después.
 | **H-05** | **E-40** · La fecha tiene que existir en el calendario | Solo se revisa la forma «cuatro dígitos, guion, dos, guion, dos». Se acepta el 30 de febrero, y la reserva queda en un día al que nadie puede llegar | `pruebas/datos-de-la-reserva.test.js::P-23` |
 | **H-06** | **E-19** · Solo se reserva un bloque que todavía no empezó | Se acepta cualquier fecha, incluso del año pasado | `pruebas/reservar-en-el-tiempo.test.js::P-29`, `pruebas/reservar-a-tiempo.test.js::P-46`, `::P-47` |
 | **H-07** | **E-35** · El nombre y el teléfono se muestran siempre como texto | Se insertan en la página sin limpiarlos, así que un nombre con signos de código lo ejecuta el navegador en vez de mostrarlo. En el caso leve descuadra la pantalla; en el grave, un nombre de cliente puede dejar código que corre cuando la administradora abre la lista del día | `pruebas/lo-que-se-ve.test.js::P-38` |
-| **H-08** | **E-33** · El precio que se muestra antes de confirmar es el que se va a cobrar | La cotización mira solo el horario y nunca el cliente: muestra ₡15.000 y cobra ₡13.500 | `pruebas/lo-que-se-ve.test.js::P-39` |
-| **H-09** | **E-34** · Sin el teléfono completo se avisa que falta para saber el precio | Muestra un número pelado, que puede no ser el que se cobra, y no lo dice | `pruebas/lo-que-se-ve.test.js::P-40` |
+| **H-08** ✅ **CERRADO** | **E-33** · El precio que se muestra antes de confirmar es el que se va a cobrar | La cotización miraba solo el horario y nunca el cliente: mostraba ₡15.000 y cobraba ₡13.500 | `pruebas/lo-que-se-ve.test.js::P-39` |
+| **H-09** ✅ **CERRADO** | **E-34** · Sin el teléfono completo se avisa que falta para saber el precio | Mostraba un número pelado, que podía no ser el que se cobra, y no lo decía | `pruebas/lo-que-se-ve.test.js::P-40` |
 | **H-10** ✅ **CERRADO** | **E-21, E-22, E-23** · Se puede cancelar hasta 24 horas antes de la hora de inicio del partido, y el borde exacto es inclusive | **Comparaba solo días, sin mirar la hora**: cancelaba cualquier reserva de un día posterior a hoy. Fallaba en un solo sentido —**dejaba cancelar lo que debía cobrarse**— y el caso era el que la administradora describió: partido mañana a las 8:00, ya las 23:00 de hoy, faltan 9 horas, y lo cancelaba igual. Pasaba con cualquier partido de mañana cuya hora ya había pasado hoy. Los demás casos coincidían con la condición por casualidad: un partido de hoy está siempre a menos de 24 horas, y uno de dentro de dos días o más está siempre a más. El mensaje de rechazo hablaba de 24 horas, pero la comprobación que hacía era otra | `pruebas/cancelar-a-tiempo.test.js::P-41`, `::P-45`, `pruebas/cancelar-en-el-borde.test.js::P-43` |
 
 ## Estructura
@@ -55,6 +55,7 @@ mismo antes y después.
 | **H-12** | La base de datos está en una ruta fija dentro del código. La suite tiene que **apartar la base real y devolverla al terminar**, con el riesgo de perderla si una corrida se corta a la mitad | Sin prueba propia |
 | **H-13** | El puerto 3000 está fijo en el código. La verificación **no puede correr con otra aplicación en ese puerto**, y si algo más lo está usando, las pruebas le hablan a la aplicación equivocada. Pasó de verdad la primera vez que se corrió esta suite: contestó otra aplicación y todo dio resultados inventados. El andamio ahora lo detecta y aborta con un mensaje claro, pero rodearlo no es arreglarlo | Sin prueba propia |
 | **H-14** ✅ **PAGADA** | El reloj se lee directo del sistema y **no había manera de fijarlo desde una prueba**. Mientras fue así, H-10 no tenía prueba: cualquier prueba de la regla de las 24 horas daba un resultado distinto según la hora en que se corriera, y una prueba que falla una de cada diez corridas destruye la puerta de calidad. Bloqueaba también el borde de E-20. Era la deuda que estaba en el camino: sin pagarla, la regla de las 24 horas no se podía arreglar con red | Pagada el 2026-08-23. Las 8 pruebas que desbloqueó son la evidencia; ver más abajo |
+| **H-17** | La regla de «el teléfono son 8 dígitos» quedó escrita **dos veces**: en la validación al crear la reserva y en la cotización. La misma clase de deuda que H-15. *La introdujo el arreglo de H-08 y H-09 el 2026-08-23; se anota en lugar de taparse* | Sin prueba propia |
 | **H-16** ✅ **PAGADA** | El cálculo del precio con descuento vivía **dentro de la ruta que crea la reserva**, así que era el único lugar del programa capaz de calcular un precio completo. La cotización previa no podía preguntárselo y mostraba solo la tarifa del horario: de ahí venía que la pantalla dijera un número y se cobrara otro. *Es un caso concreto de H-11, y no salió de la suite: apareció el 2026-08-23 al abrirle el camino a H-08. Se anota igual, con su origen declarado, porque un hallazgo sin registro no existe* | Sin prueba propia: lo que lo delata son P-39 y P-40 |
 | **H-15** ✅ **PAGADA** | La tarifa estaba escrita **tres veces** —en la portada, al crear la reserva y en la cotización—. Corregir la hora de la luz obliga a tocar los tres lugares, y tocar uno solo deja la aplicación mostrando un precio y cobrando otro | `pruebas/tarifas.test.js::P-05` la comprueba de refilón: exige que los tres caminos digan lo mismo |
 
@@ -222,6 +223,36 @@ después: 48 pruebas · pass 40 · fail 0 · todo 8 · código de salida 0
 El conteo del mes se movió tal cual, **incluidas las reservas canceladas**. Eso sigue estando mal y
 sigue siendo H-02: un commit de estructura no arregla defectos, ni siquiera cuando los tiene
 delante.
+
+### H-08 y H-09 · el precio que se mostraba no era el que se cobraba — **cerrados** el 2026-08-23
+
+Los dos se cerraron juntos porque son las dos caras de la misma pantalla: qué muestra cuando se
+puede saber el precio, y qué muestra cuando todavía no.
+
+Con el teléfono completo, la cotización le pregunta el precio a `precioDeLaReserva` —la misma
+función que usa la ruta que cobra— y agrega la explicación: «₡13.500 (con 10% de descuento por
+cliente frecuente)». Los dos caminos ya no pueden dar respuestas distintas, porque son el mismo
+cálculo.
+
+Sin el teléfono completo, muestra la tarifa del bloque y lo dice: «₡15.000 (escribí el teléfono
+para saber si aplica descuento)». El formulario ahora vuelve a preguntar el precio cuando la
+persona escribe el teléfono, no solo cuando cambia la hora.
+
+La evidencia de que las pruebas no se ablandaron: el commit del arreglo **solo borra líneas** de
+los archivos de prueba —las dos marcas— y no agrega ninguna.
+
+```
+pruebas/lo-que-se-ve.test.js   0 líneas agregadas, 2 borradas
+
+P-39  el precio mostrado incluye el descuento          ✔ (era rojo)
+P-40  sin teléfono, se avisa que falta                 ✔ (era rojo)
+```
+
+Estado de la suite: de `pass 40 / todo 8` a `pass 42 / todo 6`.
+
+**Este arreglo dejó una deuda nueva**, y queda anotada como H-17 en vez de taparse: la regla de los
+8 dígitos quedó escrita dos veces, en la validación del formulario y en la cotización. Es la misma
+clase de deuda que H-15. Se paga en el commit siguiente.
 
 ## Cómo se cierra un hallazgo
 

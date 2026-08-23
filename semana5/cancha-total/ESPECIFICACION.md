@@ -95,8 +95,8 @@ arregla en este documento: se convierte en un hallazgo con su prueba en rojo.
 
 | # | Afirmación | Fuente | ¿Lo cumple hoy? |
 |---|---|---|---|
-| E-33 | Antes de confirmar la reserva se muestra **el precio que se va a cobrar**, con el descuento ya aplicado cuando corresponde y con el detalle de por qué: «₡13.500, con 10% de descuento por cliente frecuente». *(DEC: la administradora no menciona esta pantalla; se decide que lo que se muestra tiene que ser lo que se cobra, porque las quejas por cobros son el motivo del encargo.)* | DEC | **no** — hoy solo muestra la tarifa del horario y nunca el descuento: muestra ₡15.000 y cobra ₡13.500 |
-| E-34 | Mientras el teléfono no tenga sus 8 dígitos no se puede saber si hay descuento, así que se muestra la tarifa del bloque **junto con el aviso de que falta el teléfono para saber si aplica**. Al completarse el teléfono, el precio se actualiza. *(DEC: borde de E-33; sin este aviso la pantalla muestra un número que puede no ser el que se cobra, y no lo dice.)* | DEC | **no** — hoy muestra la tarifa sin ningún aviso |
+| E-33 | Antes de confirmar la reserva se muestra **el precio que se va a cobrar**, con el descuento ya aplicado cuando corresponde y con el detalle de por qué: «₡13.500, con 10% de descuento por cliente frecuente». *(DEC: la administradora no menciona esta pantalla; se decide que lo que se muestra tiene que ser lo que se cobra, porque las quejas por cobros son el motivo del encargo.)* | DEC | **sí, desde el 2026-08-23.** Hasta entonces mostraba solo la tarifa del horario y nunca el descuento: ₡15.000 en pantalla y ₡13.500 cobrados; era el hallazgo H-08, ya cerrado |
+| E-34 | Mientras el teléfono no tenga sus 8 dígitos no se puede saber si hay descuento, así que se muestra la tarifa del bloque **junto con el aviso de que falta el teléfono para saber si aplica**. Al completarse el teléfono, el precio se actualiza. *(DEC: borde de E-33; sin este aviso la pantalla muestra un número que puede no ser el que se cobra, y no lo dice.)* | DEC | **sí, desde el 2026-08-23.** Hasta entonces mostraba la tarifa sin ningún aviso; era el hallazgo H-09, ya cerrado |
 
 ## 9 · Cómo se muestran los datos que escribe el cliente
 
@@ -125,20 +125,19 @@ aceptar una fecha inexistente sea correcto. Conserva su número para no renumera
 
 ## Resumen de lo que no se cumple
 
-Siete afirmaciones no las cumple el sistema. Cada una tiene su prueba escrita, en rojo y marcada
+Cinco afirmaciones no las cumple el sistema. Cada una tiene su prueba escrita, en rojo y marcada
 como fallo esperado, y su entrada en [`HALLAZGOS.md`](HALLAZGOS.md) con su clase.
 
-Eran trece cuando se levantó la suite. Las seis que salieron de esta lista se cerraron el
+Eran trece cuando se levantó la suite. Las ocho que salieron de esta lista se cerraron el
 2026-08-23 y su evidencia está en `HALLAZGOS.md`: E-21, E-22 y E-23, la regla de las 24 horas;
-E-06, la hora en que se enciende la luz; y E-11 y E-12, el teléfono obligatorio de 8 dígitos.
+E-06, la hora en que se enciende la luz; E-11 y E-12, el teléfono obligatorio de 8 dígitos; y
+E-33 y E-34, el precio que se muestra antes de confirmar.
 
 | Afirmación | Qué falla |
 |---|---|
 | E-08 | El descuento cuenta reservas canceladas |
 | E-19 | Se puede reservar en el pasado |
 | E-20 | Se puede reservar un bloque que ya empezó |
-| E-33 | El precio que se muestra no incluye el descuento |
-| E-34 | No hay aviso de que falta el teléfono para saber el precio |
 | E-35 | El nombre y el teléfono se insertan en la página sin limpiarlos |
 | E-40 | Se acepta una fecha que no existe en el calendario |
 

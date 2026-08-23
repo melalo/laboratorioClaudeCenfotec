@@ -225,7 +225,7 @@ app.get('/', (req, res) => {
   </label>
   <label>Precio estimado: <span id="precioEstimado">-</span></label>
   <label>Nombre del cliente: <input type="text" name="cliente"></label>
-  <label>Teléfono: <input type="text" name="telefono"></label>
+  <label>Teléfono: <input type="text" name="telefono" id="telefono"></label>
   <button type="submit">Reservar</button>
 </form>
 
@@ -234,11 +234,13 @@ app.get('/', (req, res) => {
 <script>
   function actualizarPrecio() {
     var hora = document.getElementById('hora').value;
-    fetch('/api/cotizar?fecha=${fecha}&hora=' + hora)
+    var telefono = document.getElementById('telefono').value;
+    fetch('/api/cotizar?fecha=${fecha}&hora=' + hora + '&telefono=' + encodeURIComponent(telefono))
       .then(function (r) { return r.json(); })
       .then(function (d) { document.getElementById('precioEstimado').textContent = d.precioFormateado; });
   }
   document.getElementById('hora').addEventListener('change', actualizarPrecio);
+  document.getElementById('telefono').addEventListener('input', actualizarPrecio);
   actualizarPrecio();
 </script>
 `;
@@ -421,11 +423,26 @@ app.get('/dia/:fecha', (req, res) => {
 // Precio previo de un bloque, usado por el formulario de la página de inicio.
 app.get('/api/cotizar', (req, res) => {
   const hora = Number(req.query.hora);
+  const fecha = req.query.fecha;
+  const telefono = req.query.telefono;
 
-  // Cotización rápida para el formulario.
-  const precio = tarifaDelBloque(hora);
+  // Sin el teléfono completo no hay manera de saber si el cliente es frecuente, así que se muestra
+  // la tarifa del bloque y se dice que falta el teléfono para saber el total. Antes se mostraba el
+  // número pelado, que podía no ser el que se cobraba, y no se avisaba (hallazgo H-09).
+  if (!/^\d{8}$/.test(telefono || '')) {
+    const tarifa = tarifaDelBloque(hora);
+    return res.json({
+      precio: tarifa,
+      precioFormateado: `${formatColones(tarifa)} (escribí el teléfono para saber si aplica descuento)`,
+    });
+  }
 
-  res.json({ precio, precioFormateado: formatColones(precio) });
+  // Con el teléfono completo se cotiza lo mismo que se va a cobrar, y se explica por qué.
+  // Antes esta cotización miraba solo el horario: mostraba ₡15.000 y se cobraba ₡13.500 (H-08).
+  const { precio, aplicaDescuento } = precioDeLaReserva({ hora, fecha, telefono });
+  const explicacion = aplicaDescuento ? ' (con 10% de descuento por cliente frecuente)' : '';
+
+  res.json({ precio, precioFormateado: formatColones(precio) + explicacion });
 });
 
 const PUERTO = 3000;
