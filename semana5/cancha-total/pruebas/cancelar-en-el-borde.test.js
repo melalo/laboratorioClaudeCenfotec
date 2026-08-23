@@ -38,8 +38,9 @@ test('P-42 · con exactamente 24 horas de aviso, todavía se puede cancelar', as
 test(
   'P-43 · con 23 horas de aviso, una hora menos que el plazo, no se puede cancelar',
   async () => {
-    // El otro lado del mismo borde. Falla mientras la regla compare solo días: hoy el sistema lo
-    // cancela porque el partido es "de mañana", sin fijarse en que faltan 23 horas.
+    // El otro lado del mismo borde. Falla si la regla vuelve a comparar solo días: el sistema
+    // entregado lo cancelaba porque el partido era "de mañana", sin fijarse en que faltan 23
+    // horas.
     const numero = s.sembrarReserva({
       cancha: 2, fecha: '2026-08-26', hora: 19, cliente: 'Una hora tarde',
       telefono: '88112233', precio: 20000,

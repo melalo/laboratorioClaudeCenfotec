@@ -29,8 +29,9 @@ test(
   'P-41 · con el partido mañana a las 8:00 y ya las 23:00 de hoy, no se puede cancelar',
   async () => {
     // Es el caso que describió la administradora, palabra por palabra: faltan 9 horas, no hay
-    // marcha atrás y se cobra completo. Falla mientras la regla compare solo días y no mire la
-    // hora, que es lo que hace hoy: el sistema cancela igual porque el partido es "de mañana".
+    // marcha atrás y se cobra completo. Falla si la regla vuelve a comparar solo días en lugar de
+    // medir cuánto falta: así estaba el sistema entregado, y cancelaba igual porque el partido
+    // era "de mañana". Fue el hallazgo H-10.
     const numero = s.sembrarReserva({
       cancha: 1, fecha: '2026-08-26', hora: 8, cliente: 'Cancela a las once de la noche',
       telefono: '88112233', precio: 15000,
@@ -56,9 +57,9 @@ test('P-44 · con 33 horas de aviso se puede cancelar', async () => {
 test(
   'P-45 · al rechazar por el plazo, el mensaje nombra el plazo que se comprobó',
   async () => {
-    // E-23: el mensaje tiene que decir el motivo verdadero. Falla mientras el sistema ni siquiera
-    // rechace este caso: hoy lo cancela y muestra la pantalla de cancelación, así que el mensaje
-    // del plazo no aparece nunca cuando de verdad corresponde.
+    // E-23: el mensaje tiene que decir el motivo verdadero. Falla si este caso deja de
+    // rechazarse —entonces el mensaje del plazo no aparece nunca cuando corresponde, que era lo
+    // que pasaba con el sistema entregado— o si el mensaje deja de nombrar el plazo.
     const numero = s.sembrarReserva({
       cancha: 2, fecha: '2026-08-26', hora: 9, cliente: 'Quiere saber por qué',
       telefono: '88112233', precio: 15000,
