@@ -51,7 +51,7 @@ mismo antes y después.
 | **H-11** | `server.js` no exporta nada y arranca a escuchar en cuanto se carga. **Ninguna regla se puede probar por separado**: para comprobar una tarifa hay que levantar la aplicación completa. Es la razón por la que la tarifa y el descuento, que son cálculos con bordes y les correspondería nivel unidad, se prueban a nivel integración | Sin prueba propia: se ve en el andamio que las 40 pruebas necesitan (`pruebas/servidor-de-pruebas.js`) |
 | **H-12** | La base de datos está en una ruta fija dentro del código. La suite tiene que **apartar la base real y devolverla al terminar**, con el riesgo de perderla si una corrida se corta a la mitad | Sin prueba propia |
 | **H-13** | El puerto 3000 está fijo en el código. La verificación **no puede correr con otra aplicación en ese puerto**, y si algo más lo está usando, las pruebas le hablan a la aplicación equivocada. Pasó de verdad la primera vez que se corrió esta suite: contestó otra aplicación y todo dio resultados inventados. El andamio ahora lo detecta y aborta con un mensaje claro, pero rodearlo no es arreglarlo | Sin prueba propia |
-| **H-14** | El reloj se lee directo del sistema y **no hay manera de fijarlo desde una prueba**. Por eso H-10 no tiene prueba: cualquier prueba de la regla de las 24 horas daría un resultado distinto según la hora en que se corra, y una prueba que falla una de cada diez corridas destruye la puerta de calidad. Bloquea también el borde de E-20 (un bloque de hoy que ya empezó). **Es la deuda que está en el camino: sin pagarla, la regla de las 24 horas no se puede arreglar con red** | Sin prueba: es lo que impide escribirla |
+| **H-14** ✅ **PAGADA** | El reloj se lee directo del sistema y **no hay manera de fijarlo desde una prueba**. Por eso H-10 no tiene prueba: cualquier prueba de la regla de las 24 horas daría un resultado distinto según la hora en que se corra, y una prueba que falla una de cada diez corridas destruye la puerta de calidad. Bloquea también el borde de E-20 (un bloque de hoy que ya empezó). **Es la deuda que está en el camino: sin pagarla, la regla de las 24 horas no se puede arreglar con red** | Sin prueba: es lo que impide escribirla |
 | **H-15** | La tarifa está escrita **tres veces** —en la portada, al crear la reserva y en la cotización—. Corregir la hora de la luz obliga a tocar los tres lugares, y tocar uno solo deja la aplicación mostrando un precio y cobrando otro | `pruebas/tarifas.test.js::P-05` la comprueba de refilón: exige que los tres caminos digan lo mismo |
 
 ---
@@ -67,6 +67,24 @@ No es lo mismo «no falla» que «no se probó». Esto es lo segundo:
 | E-25 · una cancelada no se revive | No hay forma de intentarlo: el sistema no ofrece la operación |
 | E-31, E-32 · el día de hoy por defecto, consultar cualquier fecha | Se ejercitan de refilón en casi todas las pruebas, no tienen prueba propia |
 | E-36 a E-39, E-41 · lo que el sistema no hace | Una prueba que fije una ausencia impediría agregarla después |
+
+## Cerrados, con su evidencia
+
+### H-14 · el reloj no se podía fijar — **pagada** el 2026-08-23
+
+El reloj quedó en un solo lugar, la función `ahora()`, que sin nada configurado devuelve la hora
+del sistema igual que antes. La variable de entorno `CANCHA_TOTAL_AHORA` permite fijarlo desde una
+prueba, en formato local sin zona: `2026-08-25T23:00:00`.
+
+Es un cambio de estructura, no de comportamiento, y la prueba de eso es que **la suite dio lo
+mismo antes y después**:
+
+```
+antes:   40 pruebas · pass 27 · fail 0 · todo 13 · código de salida 0
+después: 40 pruebas · pass 27 · fail 0 · todo 13 · código de salida 0
+```
+
+Con esto se desbloquea H-10: las condiciones E-20, E-21 y E-22 ya se pueden probar.
 
 ## Cómo se cierra un hallazgo
 

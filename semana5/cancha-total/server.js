@@ -71,8 +71,28 @@ function crearReserva(datos) {
   return info.lastInsertRowid;
 }
 
+// El reloj, en un solo lugar.
+//
+// Sin nada configurado devuelve la hora del sistema, que es exactamente lo que hacía antes cada
+// lugar de este archivo que necesitaba saber la fecha. La variable de entorno CANCHA_TOTAL_AHORA
+// permite fijarlo, y es lo que hace posible comprobar las reglas que dependen de la hora: sin
+// poder fijar el reloj, una prueba de la regla de las 24 horas da un resultado distinto según la
+// hora en que se corra, y una prueba así no sirve de red.
+//
+// El formato es hora local, sin zona: "2026-08-25T23:00:00".
+function ahora() {
+  const fijado = process.env.CANCHA_TOTAL_AHORA;
+  if (!fijado) return new Date();
+
+  const fijada = new Date(fijado);
+  if (Number.isNaN(fijada.getTime())) {
+    throw new Error(`CANCHA_TOTAL_AHORA no es una fecha válida: ${fijado}`);
+  }
+  return fijada;
+}
+
 function hoyISO() {
-  const d = new Date();
+  const d = ahora();
   const mes = String(d.getMonth() + 1).padStart(2, '0');
   const dia = String(d.getDate()).padStart(2, '0');
   return `${d.getFullYear()}-${mes}-${dia}`;
