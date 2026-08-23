@@ -55,6 +55,7 @@ mismo antes y después.
 | **H-12** | La base de datos está en una ruta fija dentro del código. La suite tiene que **apartar la base real y devolverla al terminar**, con el riesgo de perderla si una corrida se corta a la mitad | Sin prueba propia |
 | **H-13** | El puerto 3000 está fijo en el código. La verificación **no puede correr con otra aplicación en ese puerto**, y si algo más lo está usando, las pruebas le hablan a la aplicación equivocada. Pasó de verdad la primera vez que se corrió esta suite: contestó otra aplicación y todo dio resultados inventados. El andamio ahora lo detecta y aborta con un mensaje claro, pero rodearlo no es arreglarlo | Sin prueba propia |
 | **H-14** ✅ **PAGADA** | El reloj se lee directo del sistema y **no había manera de fijarlo desde una prueba**. Mientras fue así, H-10 no tenía prueba: cualquier prueba de la regla de las 24 horas daba un resultado distinto según la hora en que se corriera, y una prueba que falla una de cada diez corridas destruye la puerta de calidad. Bloqueaba también el borde de E-20. Era la deuda que estaba en el camino: sin pagarla, la regla de las 24 horas no se podía arreglar con red | Pagada el 2026-08-23. Las 8 pruebas que desbloqueó son la evidencia; ver más abajo |
+| **H-16** ✅ **PAGADA** | El cálculo del precio con descuento vivía **dentro de la ruta que crea la reserva**, así que era el único lugar del programa capaz de calcular un precio completo. La cotización previa no podía preguntárselo y mostraba solo la tarifa del horario: de ahí venía que la pantalla dijera un número y se cobrara otro. *Es un caso concreto de H-11, y no salió de la suite: apareció el 2026-08-23 al abrirle el camino a H-08. Se anota igual, con su origen declarado, porque un hallazgo sin registro no existe* | Sin prueba propia: lo que lo delata son P-39 y P-40 |
 | **H-15** ✅ **PAGADA** | La tarifa estaba escrita **tres veces** —en la portada, al crear la reserva y en la cotización—. Corregir la hora de la luz obliga a tocar los tres lugares, y tocar uno solo deja la aplicación mostrando un precio y cobrando otro | `pruebas/tarifas.test.js::P-05` la comprueba de refilón: exige que los tres caminos digan lo mismo |
 
 ---
@@ -202,6 +203,25 @@ P-19  un teléfono de 8 dígitos se acepta      ✔   ← el freno
 P-19 es la que vigila que la validación no se pase de dura y rechace un teléfono válido.
 
 Estado de la suite: de `pass 36 / todo 12` a `pass 40 / todo 8`.
+
+### H-16 · el precio con descuento vivía dentro de la ruta — **pagada** el 2026-08-23
+
+El cálculo quedó en una sola función, `precioDeLaReserva({ hora, fecha, telefono })`, que devuelve
+el monto **y si el descuento aplicó** —porque quien muestra un precio necesita poder explicar por
+qué es ese—. La ruta que crea la reserva ahora se lo pregunta en lugar de calcularlo.
+
+**La cotización sigue sin usarla en este commit**, a propósito: mover el cálculo de lugar y cambiar
+lo que la pantalla muestra son dos trabajos distintos. La prueba de que solo cambió la estructura es
+que la suite dio lo mismo antes y después:
+
+```
+antes:   48 pruebas · pass 40 · fail 0 · todo 8 · código de salida 0
+después: 48 pruebas · pass 40 · fail 0 · todo 8 · código de salida 0
+```
+
+El conteo del mes se movió tal cual, **incluidas las reservas canceladas**. Eso sigue estando mal y
+sigue siendo H-02: un commit de estructura no arregla defectos, ni siquiera cuando los tiene
+delante.
 
 ## Cómo se cierra un hallazgo
 

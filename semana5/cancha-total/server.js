@@ -61,6 +61,34 @@ function tarifaDelBloque(hora) {
   return hora >= HORA_EN_QUE_SE_ENCIENDE_LA_LUZ ? TARIFA_CON_LUZ : TARIFA_DIURNA;
 }
 
+// El precio de una reserva, en un solo lugar: la tarifa del bloque, y el 10% de descuento si el
+// cliente es frecuente.
+//
+// Antes este cálculo vivía dentro de la ruta que crea la reserva, así que era el único lugar del
+// programa que sabía calcular un precio completo. La cotización previa no podía preguntárselo y
+// terminaba mostrando solo la tarifa del horario: por eso la pantalla mostraba un número y se
+// cobraba otro. Sacarlo acá es lo que permite que los dos caminos den la misma respuesta.
+//
+// Devuelve el monto y si el descuento aplicó, porque quien muestra el precio necesita poder
+// explicar por qué es ese.
+function precioDeLaReserva({ hora, fecha, telefono }) {
+  const tarifa = tarifaDelBloque(hora);
+
+  const mesDelPartido = fecha.slice(0, 7);
+  const conteoMes = db.prepare(
+    `SELECT COUNT(*) AS total FROM reservas
+     WHERE telefono = ? AND substr(fecha, 1, 7) = ?`
+  ).get(telefono, mesDelPartido);
+
+  const totalConEstaReserva = conteoMes.total + 1;
+  const aplicaDescuento = totalConEstaReserva >= 4;
+
+  return {
+    precio: aplicaDescuento ? tarifa * 0.9 : tarifa,
+    aplicaDescuento,
+  };
+}
+
 function formatColones(monto) {
   return '₡' + Math.round(monto).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
@@ -315,22 +343,8 @@ app.post('/reservas', (req, res) => {
     return res.send(layout('Error', contenidoOcupado));
   }
 
-  // Paso 4: calcular el precio según el horario.
-  let precio = tarifaDelBloque(hora);
-
-  // Paso 5: contar cuántas reservas lleva este teléfono en el mes para
-  // saber si aplica el descuento de cliente frecuente.
-  const mesFecha = fecha.slice(0, 7);
-  const conteoMes = db.prepare(
-    `SELECT COUNT(*) AS total FROM reservas
-     WHERE telefono = ? AND substr(fecha, 1, 7) = ?`
-  ).get(telefono, mesFecha);
-
-  const totalConEstaReserva = conteoMes.total + 1;
-  const aplicaDescuento = totalConEstaReserva >= 4;
-  if (aplicaDescuento) {
-    precio = precio * 0.9;
-  }
+  // Paso 4: calcular el precio, que es la tarifa del bloque con el descuento si aplica.
+  const { precio, aplicaDescuento } = precioDeLaReserva({ hora, fecha, telefono });
 
   // Paso 6: guardar la reserva.
   const id = crearReserva({ cancha, fecha, hora, cliente, telefono, precio });
