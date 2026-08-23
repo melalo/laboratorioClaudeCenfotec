@@ -55,7 +55,7 @@ mismo antes y después.
 | **H-12** | La base de datos está en una ruta fija dentro del código. La suite tiene que **apartar la base real y devolverla al terminar**, con el riesgo de perderla si una corrida se corta a la mitad | Sin prueba propia |
 | **H-13** | El puerto 3000 está fijo en el código. La verificación **no puede correr con otra aplicación en ese puerto**, y si algo más lo está usando, las pruebas le hablan a la aplicación equivocada. Pasó de verdad la primera vez que se corrió esta suite: contestó otra aplicación y todo dio resultados inventados. El andamio ahora lo detecta y aborta con un mensaje claro, pero rodearlo no es arreglarlo | Sin prueba propia |
 | **H-14** ✅ **PAGADA** | El reloj se lee directo del sistema y **no había manera de fijarlo desde una prueba**. Mientras fue así, H-10 no tenía prueba: cualquier prueba de la regla de las 24 horas daba un resultado distinto según la hora en que se corriera, y una prueba que falla una de cada diez corridas destruye la puerta de calidad. Bloqueaba también el borde de E-20. Era la deuda que estaba en el camino: sin pagarla, la regla de las 24 horas no se podía arreglar con red | Pagada el 2026-08-23. Las 8 pruebas que desbloqueó son la evidencia; ver más abajo |
-| **H-15** | La tarifa está escrita **tres veces** —en la portada, al crear la reserva y en la cotización—. Corregir la hora de la luz obliga a tocar los tres lugares, y tocar uno solo deja la aplicación mostrando un precio y cobrando otro | `pruebas/tarifas.test.js::P-05` la comprueba de refilón: exige que los tres caminos digan lo mismo |
+| **H-15** ✅ **PAGADA** | La tarifa estaba escrita **tres veces** —en la portada, al crear la reserva y en la cotización—. Corregir la hora de la luz obliga a tocar los tres lugares, y tocar uno solo deja la aplicación mostrando un precio y cobrando otro | `pruebas/tarifas.test.js::P-05` la comprueba de refilón: exige que los tres caminos digan lo mismo |
 
 ---
 
@@ -114,6 +114,24 @@ P-45  el mensaje nombra el plazo            -> lo nombra       ✔ (era rojo)
 
 Estado de la suite: de `pass 30 / todo 18` a `pass 33 / todo 15`. Tres marcas menos, que es como
 se mide el avance.
+
+### H-15 · la tarifa estaba escrita tres veces — **pagada** el 2026-08-23
+
+El cálculo quedó en una sola función, `tarifaDelBloque(hora)`, con sus tres valores como
+constantes con nombre: `TARIFA_DIURNA`, `TARIFA_CON_LUZ` y `HORA_EN_QUE_SE_ENCIENDE_LA_LUZ`. Los
+tres caminos —la portada, la creación de la reserva y la cotización— preguntan ahí.
+
+**La hora de la luz sigue en las 18:00 en este commit**, a propósito: mover la tarifa de lugar y
+cambiar cuánto se cobra son dos trabajos distintos. La prueba de que solo cambió la estructura es
+que la suite dio lo mismo antes y después:
+
+```
+antes:   48 pruebas · pass 33 · fail 0 · todo 15 · código de salida 0
+después: 48 pruebas · pass 33 · fail 0 · todo 15 · código de salida 0
+```
+
+Con esto, H-01 se arregla cambiando **un número en un solo lugar** en vez de tres, y ya no existe
+la manera de dejar la aplicación mostrando un precio y cobrando otro.
 
 ## Cómo se cierra un hallazgo
 
