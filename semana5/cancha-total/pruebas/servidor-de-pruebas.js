@@ -72,7 +72,7 @@ async function elPuertoEstaLibre() {
   }
 }
 
-async function levantarLaAplicacion() {
+async function arrancar(entornoExtra) {
   if (!(await elPuertoEstaLibre())) {
     throw new Error(
       'Hay otra aplicación escuchando en el puerto 3000, así que la verificación no puede ' +
@@ -84,6 +84,7 @@ async function levantarLaAplicacion() {
   proceso = spawn(process.execPath, [path.join(RAIZ, 'server.js')], {
     cwd: RAIZ,
     stdio: 'ignore',
+    env: { ...process.env, ...entornoExtra },
   });
 
   const limite = Date.now() + 15000;
@@ -111,6 +112,22 @@ async function levantarLaAplicacion() {
   }
   await bajarLaAplicacion();
   throw new Error('La aplicación no respondió en 15 segundos.');
+}
+
+// Arranca la aplicación con el reloj del sistema, que es lo normal.
+async function levantarLaAplicacion() {
+  return arrancar({});
+}
+
+// Arranca la aplicación con el reloj **fijado** en un momento exacto, en formato local sin zona:
+// '2026-08-25T23:00:00'. Devuelve la función que hay que pasarle a `before`, así:
+//
+//     before(s.levantarLaAplicacionConReloj('2026-08-25T23:00:00'));
+//
+// Es lo que permite probar las reglas que dependen de la hora sin que el resultado cambie según
+// cuándo se corra la suite. Antes esto no se podía: era el hallazgo H-14, ya pagado.
+function levantarLaAplicacionConReloj(momento) {
+  return async () => arrancar({ CANCHA_TOTAL_AHORA: momento });
 }
 
 async function bajarLaAplicacion() {
@@ -291,6 +308,7 @@ function proximoPrimeroDeEnero() {
 module.exports = {
   DIRECCION,
   levantarLaAplicacion,
+  levantarLaAplicacionConReloj,
   bajarLaAplicacion,
   verPagina,
   reservar,
