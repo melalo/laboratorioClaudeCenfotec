@@ -73,7 +73,7 @@ arregla en este documento: se convierte en un hallazgo con su prueba en rojo.
 
 | # | Afirmación | Fuente | ¿Lo cumple hoy? |
 |---|---|---|---|
-| E-21 | Se puede cancelar **hasta 24 horas antes de la hora de inicio del partido**. Con menos de 24 horas no hay cancelación y se cobra completo: si el partido es mañana a las 8:00 y ya son las 23:00 de hoy, no hay marcha atrás. | ADM | **no** — el sistema solo compara días: acepta esa cancelación de las 23:00, y en cambio rechaza siempre cualquier reserva del mismo día |
+| E-21 | Se puede cancelar **hasta 24 horas antes de la hora de inicio del partido**. Con menos de 24 horas no hay cancelación y se cobra completo: si el partido es mañana a las 8:00 y ya son las 23:00 de hoy, no hay marcha atrás. | ADM | **no** — el sistema solo compara días, sin mirar la hora, así que acepta esa cancelación de las 23:00. Su rechazo de las reservas del mismo día, en cambio, sí coincide con esta condición: un partido de hoy está siempre a menos de 24 horas |
 | E-22 | El borde de E-21 es inclusive: si faltan **exactamente** 24 horas, todavía se puede cancelar. *(DEC: «hasta 24 horas antes» no dice qué pasa en el instante justo; se elige a favor del cliente porque la administradora describe el límite como un plazo que se respeta, no como uno que se pierde.)* | DEC | **no** — consecuencia de E-21 |
 | E-23 | Cuando la cancelación se rechaza, el mensaje dice el motivo verdadero: faltan menos de 24 horas para el inicio del partido. | ADM + DEC | **no** — hoy el mensaje habla de 24 horas pero la regla que aplicó fue otra, así que promete algo que no comprobó |
 | E-24 | Una reserva ya cancelada no se puede volver a cancelar, y se avisa que ya lo estaba. | SIS | sí |
