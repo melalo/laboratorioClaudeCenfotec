@@ -10,7 +10,7 @@ como lo entregó el proveedor (commit `65ce4b4`).
 ## Estado de la suite
 
 ```
-48 pruebas · 33 en verde · 0 fallos · 15 marcadas como fallo esperado
+48 pruebas · 36 en verde · 0 fallos · 12 marcadas como fallo esperado
 ```
 
 Eran 40 cuando se escribió la suite. Las 8 que se sumaron son las que **no se podían escribir**
@@ -36,7 +36,7 @@ mismo antes y después.
 
 | # | Condición | Qué hace hoy | Prueba |
 |---|---|---|---|
-| **H-01** | **E-06, E-10** · Un bloque que empieza entre las 17:00 y las 21:00 cuesta ₡20.000, porque a las 17:00 se enciende la luz | Cobra ₡15.000 a las 17:00 y solo sube a ₡20.000 desde las 18:00. Al cliente frecuente le cobra ₡13.500 en vez de ₡18.000. Está escrito en los tres lugares que calculan la tarifa | `pruebas/tarifas.test.js::P-03`, `::P-05`, `pruebas/descuento.test.js::P-14` |
+| **H-01** ✅ **CERRADO** | **E-06, E-10** · Un bloque que empieza entre las 17:00 y las 21:00 cuesta ₡20.000, porque a las 17:00 se enciende la luz | Cobraba ₡15.000 a las 17:00 y solo subía a ₡20.000 desde las 18:00. Al cliente frecuente le cobraba ₡13.500 en vez de ₡18.000. Estaba escrito en los tres lugares que calculaban la tarifa, así que el defecto aparecía tres veces | `pruebas/tarifas.test.js::P-03`, `::P-05`, `pruebas/descuento.test.js::P-14` |
 | **H-02** | **E-08** · Para el descuento solo cuentan las reservas activas; las canceladas no | El conteo del mes incluye las canceladas, así que quien aparta y cancela llega al 10% sin haber jugado | `pruebas/descuento.test.js::P-10` |
 | **H-03** | **E-11** · El teléfono es obligatorio | Se puede reservar sin teléfono. Efecto de segundo orden: el conteo del descuento agrupa por teléfono, así que **todas las reservas sin teléfono se suman entre sí** y le regalan el 10% a un desconocido | `pruebas/datos-de-la-reserva.test.js::P-15` |
 | **H-04** | **E-12** · El teléfono son exactamente 8 dígitos | No se revisa nada: entra un teléfono de 3 dígitos, de 20, o con letras. El cliente deja de ser ubicable, que es para lo que se pide el teléfono | `pruebas/datos-de-la-reserva.test.js::P-16`, `::P-17`, `::P-18` |
@@ -132,6 +132,38 @@ después: 48 pruebas · pass 33 · fail 0 · todo 15 · código de salida 0
 
 Con esto, H-01 se arregla cambiando **un número en un solo lugar** en vez de tres, y ya no existe
 la manera de dejar la aplicación mostrando un precio y cobrando otro.
+
+### H-01 · la luz se cobraba desde las 18:00 — **cerrado** el 2026-08-23
+
+Un número, en un solo lugar: `HORA_EN_QUE_SE_ENCIENDE_LA_LUZ` pasó de 18 a 17. Eso fue todo el
+arreglo, y solo fue así de chico porque H-15 se pagó primero. Antes de pagarla, el mismo arreglo
+eran tres cambios y la posibilidad de que uno quedara atrás.
+
+La evidencia de que las pruebas no se ablandaron: el commit del arreglo **solo borra líneas** de
+los archivos de prueba —las tres marcas de fallo esperado— y no agrega ninguna.
+
+```
+pruebas/tarifas.test.js     0 líneas agregadas, 2 borradas
+pruebas/descuento.test.js   0 líneas agregadas, 1 borrada
+```
+
+Las pruebas de la tarifa quedaron todas en verde, incluidas las cuatro que ya pasaban y que
+estaban ahí para que el arreglo no se desbordara hacia el día:
+
+```
+P-01  el bloque de las 8:00 cuesta ₡15.000            ✔
+P-02  el bloque de las 16:00 cuesta ₡15.000            ✔   ← el borde por abajo
+P-03  el bloque de las 17:00 cuesta ₡20.000            ✔ (era rojo)
+P-04  el bloque de las 21:00 cuesta ₡20.000            ✔
+P-05  los tres caminos cobran ₡20.000 a las 17:00      ✔ (era rojo)
+P-13  con descuento, un bloque diurno son ₡13.500      ✔
+P-14  con descuento, las 17:00 son ₡18.000             ✔ (era rojo)
+```
+
+P-02 es la que importa vigilar: si el arreglo se hubiera pasado de la raya y adelantado la luz a
+las 16:00, se habría puesto roja.
+
+Estado de la suite: de `pass 33 / todo 15` a `pass 36 / todo 12`.
 
 ## Cómo se cierra un hallazgo
 

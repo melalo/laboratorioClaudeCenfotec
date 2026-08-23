@@ -127,7 +127,6 @@ test('P-13 · con descuento, un bloque diurno queda cobrado en ₡13.500', async
 
 test(
   'P-14 · con descuento, un bloque de las 17:00 queda cobrado en ₡18.000',
-  { todo: 'H-01' },
   async () => {
     // El 10% se aplica sobre la tarifa con luz, que a las 17:00 es ₡20.000. Falla mientras la
     // hora de la luz esté equivocada: hoy cobra ₡13.500, o sea el descuento sobre la tarifa

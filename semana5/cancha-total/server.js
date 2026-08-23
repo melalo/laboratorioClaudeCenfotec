@@ -53,7 +53,9 @@ function esFeriado(fecha) {
 // lugar donde cambiarla, y los tres caminos preguntan acá.
 const TARIFA_DIURNA = 15000;
 const TARIFA_CON_LUZ = 20000;
-const HORA_EN_QUE_SE_ENCIENDE_LA_LUZ = 18;
+// La luz se enciende a las 17:00, así que el partido de las 5 de la tarde ya va con luz. Estaba
+// en 18, y por eso el bloque de las 17:00 se cobraba como diurno: fue el hallazgo H-01.
+const HORA_EN_QUE_SE_ENCIENDE_LA_LUZ = 17;
 
 function tarifaDelBloque(hora) {
   return hora >= HORA_EN_QUE_SE_ENCIENDE_LA_LUZ ? TARIFA_CON_LUZ : TARIFA_DIURNA;

@@ -28,7 +28,6 @@ test('P-02 · el bloque de las 16:00 cuesta ₡15.000, es el último diurno', as
 
 test(
   'P-03 · el bloque de las 17:00 cuesta ₡20.000: la luz ya está encendida',
-  { todo: 'H-01' },
   async () => {
     // Falla si la luz se atrasa de las 17:00, que es justo lo que hace el sistema hoy.
     const cotizacion = await s.cotizar({ fecha: s.fechaEnDias(40), hora: 17 });
@@ -44,7 +43,6 @@ test('P-04 · el bloque de las 21:00 cuesta ₡20.000', async () => {
 
 test(
   'P-05 · a las 17:00 cobran ₡20.000 los tres caminos: la tabla, la cotización y la reserva',
-  { todo: 'H-01' },
   async () => {
     // La tarifa está escrita en tres lugares distintos del código (H-15), así que hay que
     // comprobar los tres. Falla si alguno de los tres se queda atrás cuando se corrija la hora

@@ -37,7 +37,7 @@ arregla en este documento: se convierte en un hallazgo con su prueba en rojo.
 | # | Afirmación | Fuente | ¿Lo cumple hoy? |
 |---|---|---|---|
 | E-05 | Un bloque que empieza entre las **8:00 y las 16:00 inclusive** cuesta **₡15.000** (tarifa diurna). | ADM | sí |
-| E-06 | Un bloque que empieza entre las **17:00 y las 21:00 inclusive** cuesta **₡20.000**, porque a las 17:00 se enciende la luz. **El partido de las 17:00 ya va con luz.** | ADM | **no** — el sistema cobra ₡15.000 a las 17:00 y solo sube desde las 18:00 |
+| E-06 | Un bloque que empieza entre las **17:00 y las 21:00 inclusive** cuesta **₡20.000**, porque a las 17:00 se enciende la luz. **El partido de las 17:00 ya va con luz.** | ADM | **sí, desde el 2026-08-23.** Hasta entonces cobraba ₡15.000 a las 17:00 y solo subía desde las 18:00; era el hallazgo H-01, ya cerrado |
 
 ## 3 · El descuento de cliente frecuente
 
@@ -46,7 +46,7 @@ arregla en este documento: se convierte en un hallazgo con su prueba en rojo.
 | E-07 | Un cliente con **4 o más reservas en el mismo mes, contando la que está haciendo**, recibe **10% de descuento** en esa reserva. El cliente se identifica por su teléfono. | ADM | sí |
 | E-08 | Para ese conteo **solo cuentan las reservas activas**. Las canceladas no cuentan: frecuente es el que juega, no el que aparta. | ADM | **no** — el sistema cuenta también las canceladas |
 | E-09 | El mes que se cuenta es el **mes en que se juega el partido**, no el mes en que se hizo la reserva. *(DEC: la administradora dice «en el mismo mes» sin aclarar cuál; se decide el mes del partido porque ella misma define al frecuente como «el que juega».)* | DEC | sí |
-| E-10 | Con descuento, un bloque diurno cuesta **₡13.500** y un bloque con luz **₡18.000**. | derivada de E-05, E-06, E-07 | parcial — el 10% se aplica bien, pero sobre la tarifa equivocada a las 17:00 (E-06) |
+| E-10 | Con descuento, un bloque diurno cuesta **₡13.500** y un bloque con luz **₡18.000**. | derivada de E-05, E-06, E-07 | **sí, desde el 2026-08-23.** El 10% siempre se aplicó bien; lo que estaba mal era la tarifa de las 17:00 sobre la que se aplicaba (E-06) |
 
 ## 4 · Los datos de una reserva
 
@@ -125,15 +125,15 @@ aceptar una fecha inexistente sea correcto. Conserva su número para no renumera
 
 ## Resumen de lo que no se cumple
 
-Diez afirmaciones no las cumple el sistema. Cada una tiene su prueba escrita, en rojo y marcada
+Nueve afirmaciones no las cumple el sistema. Cada una tiene su prueba escrita, en rojo y marcada
 como fallo esperado, y su entrada en [`HALLAZGOS.md`](HALLAZGOS.md) con su clase.
 
-Eran trece cuando se levantó la suite. Las tres que salieron de esta lista —E-21, E-22 y E-23, la
-regla de las 24 horas— se cerraron el 2026-08-23 y su evidencia está en `HALLAZGOS.md`.
+Eran trece cuando se levantó la suite. Las cuatro que salieron de esta lista se cerraron el
+2026-08-23 y su evidencia está en `HALLAZGOS.md`: E-21, E-22 y E-23, la regla de las 24 horas, y
+E-06, la hora en que se enciende la luz.
 
 | Afirmación | Qué falla |
 |---|---|
-| E-06 | La luz se cobra desde las 18:00 en vez de las 17:00 |
 | E-08 | El descuento cuenta reservas canceladas |
 | E-11 | El teléfono no es obligatorio |
 | E-12 | El teléfono no se valida como 8 dígitos |
@@ -144,4 +144,5 @@ regla de las 24 horas— se cerraron el 2026-08-23 y su evidencia está en `HALL
 | E-35 | El nombre y el teléfono se insertan en la página sin limpiarlos |
 | E-40 | Se acepta una fecha que no existe en el calendario |
 
-E-10 no entra en la lista porque no falla por sí sola: falla arrastrada por E-06.
+E-10 tampoco está en la lista: nunca falló por sí sola, fallaba arrastrada por E-06, y con E-06
+cerrada quedó cumplida.
