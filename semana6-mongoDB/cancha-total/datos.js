@@ -2,8 +2,8 @@
 // Uso: npm run datos
 //
 // Trabaja contra la misma base que `server.js`, porque los dos le preguntan a `basededatos.js`:
-// el archivo `reservas.db` de esta carpeta si no hay nada configurado, o la base de Turso si esta
-// puesta la variable TURSO_DATABASE_URL. Este archivo no sabe cual de los dos es, y no le hace falta.
+// el MongoDB local de tu computadora si no hay nada configurado, o el de MongoDB Atlas si esta
+// puesta la variable MONGODB_URI. Este archivo no sabe cual de los dos es, y no le hace falta.
 
 const baseDeDatos = require('./basededatos');
 
@@ -29,9 +29,9 @@ const reservas = [
 ];
 
 async function recrear() {
-  // Esto es un DROP TABLE: borra la tabla entera y de paso reinicia la numeracion, que es lo que
-  // hace que la primera reserva nueva vuelva a ser la #1. Antes se borraba el archivo entero, pero
-  // contra una base remota no hay archivo que borrar; asi funciona igual en los dos destinos.
+  // Antes esto era un DROP TABLE, que borraba la tabla entera y de paso reiniciaba la numeracion.
+  // MongoDB no tiene tablas que tirar: se vacia la coleccion de reservas y la del contador, que es
+  // lo que hace que la primera reserva nueva vuelva a ser la #1.
   await baseDeDatos.vaciarTodo();
   console.log('Reservas anteriores borradas.');
 

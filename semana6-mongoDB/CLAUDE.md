@@ -115,14 +115,13 @@ npm start         # levanta el servidor en http://localhost:3000
 
 ### Cómo está construido
 
-- `server.js` — las rutas, el HTML y las reglas de negocio.
-- `basededatos.js` — **el único lugar donde hay SQL**. Antes las consultas estaban escritas tres
-  veces (en `server.js`, en `datos.js` y en el andamio de las pruebas); acá quedan una sola vez.
+Tres archivos, sin carpetas:
+
+- `server.js` (381 líneas) — **todo vive acá**: la creación de la tabla, las consultas, el HTML y
+  las rutas.
 - `datos.js` — recrea la base con datos de ejemplo, con fechas relativas al día en que se corre.
 - `reservas.db` — SQLite (biblioteca `@libsql/client`, consultas SQL escritas a mano, sin ORM).
   Una sola tabla, `reservas`.
-- `api/index.js` y `vercel.json` — lo único que existe por el despliegue en Vercel y no por el
-  negocio. `api/index.js` no hace nada propio: entrega la aplicación que `server.js` exporta.
 
 **La biblioteca de la base cambió el 2026-08-25**, para poder desplegar en Vercel. Antes era
 `better-sqlite3`, que solo sabe abrir un archivo del disco de al lado; en Vercel eso no sirve,
@@ -140,27 +139,14 @@ porque el disco se borra entre una visita y la siguiente y las reservas se perde
   contesta con una promesa, porque la base puede estar del otro lado de internet. Por eso las
   rutas que consultan son `async`, van envueltas en `conBase()` —que evita que una petición quede
   colgada si la base falla— y la creación de la tabla se espera en un `app.use` antes de atender.
-- **`better-sqlite3` desapareció del proyecto.** Ya no queda ni como dependencia de desarrollo:
-  el andamio de las pruebas también le habla a la base a través de `basededatos.js`, así que hay
-  una sola biblioteca de base de datos en todo el proyecto.
-- **La suite ya no aparta la base real.** Cada corrida se crea su propia base vacía en un archivo
-  temporal del sistema y le pasa la dirección por `TURSO_DATABASE_URL`, la misma variable del
-  despliegue. `reservas.db` no se abre siquiera. Eso es lo que paga el hallazgo H-12.
+- **`better-sqlite3` quedó como dependencia solo de desarrollo:** el andamio de las pruebas
+  (`pruebas/servidor-de-pruebas.js`) la sigue usando para sembrar y leer la base local. No se
+  tocó, para no modificar la red de pruebas mientras se cambiaba el código que ella vigila.
 - **`npm run datos` ya no borra el archivo**, hace `DROP TABLE`: contra una base remota no hay
   archivo que tirar a la basura, y así el comando funciona igual en los dos destinos.
 
-**El desvío por MongoDB, y por qué se deshizo.** El 2026-08-25, más tarde ese mismo día, la
-aplicación se migró entera a MongoDB Atlas, porque conectar Turso se había trabado (había que sacar
-a mano dos credenciales del panel de Turso y esas credenciales nunca llegaron). Esa versión existe y
-está guardada tal cual en la carpeta `semana6-mongoDB/`, al lado de esta. Se deshizo el mismo día
-porque **contradecía la especificación**: E-41 dice «la base de datos es SQLite y así se queda».
-Volver a `@libsql/client` es lo que devuelve el proyecto a lo que la consigna exige, sin renunciar a
-poder desplegarlo.
-
-Verificado el 2026-08-25 después de volver a SQLite: `verificar.sh` sale en 0, con las mismas 48
-pruebas, 42 pasando y 6 marcadas como fallo esperado (H-02, H-05, H-06 ×3 y H-07) — prueba por
-prueba, idéntico a antes del cambio. Comprobado además a mano: `npm start` levanta y contesta 200 en
-http://localhost:3000, y `npm run datos` recrea las 10 reservas de ejemplo.
+Verificado el 2026-08-25 después de migrar: `verificar.sh` sale en 0, con las mismas 48 pruebas,
+42 pasando y 6 marcadas como fallo esperado — prueba por prueba, idéntico a antes del cambio.
 
 **No hay plantillas ni archivos estáticos.** Cada página se arma como texto dentro de
 `layout(titulo, contenido)`, que trae el CSS incrustado. El navegador recibe HTML ya renderizado;

@@ -1,5 +1,5 @@
 // Cancha Total F5 - sistema de reservas
-// Node + Express + SQLite (via @libsql/client), vistas renderizadas en el servidor.
+// Node + Express + MongoDB, vistas renderizadas en el servidor.
 
 const express = require('express');
 const baseDeDatos = require('./basededatos');
@@ -9,7 +9,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 // Este archivo ya no escribe ni una consulta: se las pide a `basededatos.js`, que es el unico que
-// sabe como se le pregunta a la base. Antes aca vivia el SQL, y estaba escrito tambien en
+// sabe que del otro lado hay MongoDB. Antes aca vivia el SQL, y estaba escrito tambien en
 // `datos.js` y en el andamio de las pruebas: tres copias que podian quedar distintas entre si.
 
 // Envolver una ruta que consulta la base.
@@ -23,7 +23,7 @@ function conBase(manejador) {
 
 // La base tiene que estar lista antes de atender a nadie.
 //
-// Abrir la base lleva su tiempo -y si esta en Turso, viaja por internet-, asi que es una promesa. El `app.use` de abajo hace que cada
+// Conectarse a MongoDB lleva su tiempo, asi que es una promesa. El `app.use` de abajo hace que cada
 // visita espere a que esa promesa termine antes de entrar a su ruta: sin el, la primera visita
 // podria llegar a una base que todavia no esta conectada.
 const baseLista = baseDeDatos.estaLista();

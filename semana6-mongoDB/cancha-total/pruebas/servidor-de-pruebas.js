@@ -13,24 +13,23 @@
 // Los dos son hallazgos de estructura anotados en HALLAZGOS.md. Este archivo los rodea; no los
 // arregla, porque el código de producción no se toca.
 //
-// La base de datos, en cambio, dejó de ser un problema, y vale la pena decir por qué. Antes la
-// suite tenía que **apartar la base real** (`reservas.db`) antes de correr y **devolverla** al
-// terminar, con el riesgo de perderla si una corrida se cortaba a la mitad: ese era el hallazgo
-// H-12. Ahora cada corrida se hace **su propia base, en un archivo temporal del sistema**, que nace
-// vacía y se borra al terminar. La base de verdad no se toca en ningún momento, así que ya no hay
-// nada que apartar ni nada que perder.
+// La base de datos, en cambio, dejó de ser un problema al migrar a MongoDB, y vale la pena decir
+// por qué. Cuando la base era el archivo `reservas.db`, la suite tenía que **apartar la base real**
+// antes de correr y **devolverla** al terminar, con el riesgo de perderla si una corrida se cortaba
+// a la mitad: ese era el hallazgo H-12. Ahora cada corrida levanta su **propio MongoDB temporal**,
+// que nace vacío y desaparece al terminar. La base de verdad no se toca en ningún momento, así que
+// ya no hay nada que apartar ni nada que perder.
 
 const { spawn } = require('node:child_process');
 const { once } = require('node:events');
 const path = require('node:path');
-const fs = require('node:fs');
-const os = require('node:os');
+const { MongoMemoryServer } = require('mongodb-memory-server');
 
 const RAIZ = path.join(__dirname, '..');
 const DIRECCION = 'http://127.0.0.1:3000';
 
 let proceso = null;
-let archivoDePrueba = null;
+let mongoDePrueba = null;
 let baseDeDatos = null;
 
 function esperar(milisegundos) {
@@ -39,38 +38,19 @@ function esperar(milisegundos) {
 
 // -- La base de datos ------------------------------------------------------------------------
 
-// Estrena una base vacía en un archivo temporal y hace que TODOS le hablen a ella: tanto la
-// aplicación que se lanza en otro proceso —a la que se le pasa la dirección por el entorno— como
-// este mismo archivo, que necesita sembrar y leer reservas para comprobar los efectos.
+// Levanta un MongoDB temporal y hace que TODOS le hablen a él: tanto la aplicación que se lanza en
+// otro proceso —a la que se le pasa la dirección por el entorno— como este mismo archivo, que
+// necesita sembrar y leer reservas para comprobar los efectos.
 //
 // Que los dos apunten a la misma base es lo que hace que una prueba pueda sembrar una reserva y
 // después preguntarle a la aplicación qué hizo con ella.
-//
-// `TURSO_DATABASE_URL` es la misma variable que usa el despliegue para apuntar a la nube; acá se le
-// pasa una dirección de archivo (`file:...`). La aplicación no distingue una de otra, que es
-// justamente la gracia: se prueba el mismo código que se despliega.
-let corrida = 0;
 async function levantarLaBaseTemporal() {
-  corrida += 1;
-  archivoDePrueba = path.join(os.tmpdir(), `cancha-total-pruebas-${process.pid}-${corrida}.db`);
-  borrarElArchivoDePrueba();
-  process.env.TURSO_DATABASE_URL = 'file:' + archivoDePrueba.replace(/\\/g, '/');
-  // Se carga después de fijar el entorno, para que se conecte a esta base y no a la de verdad.
+  mongoDePrueba = await MongoMemoryServer.create();
+  process.env.MONGODB_URI = mongoDePrueba.getUri();
+  process.env.MONGODB_DB = 'cancha_total_pruebas';
+  // Se carga después de fijar el entorno, para que se conecte a esta base y no levante otra.
   baseDeDatos = require('../basededatos');
-  return process.env.TURSO_DATABASE_URL;
-}
-
-// SQLite deja al lado del archivo otros dos de trabajo (`-wal` y `-shm`); si quedaran, la próxima
-// corrida arrancaría con basura de la anterior.
-function borrarElArchivoDePrueba() {
-  if (!archivoDePrueba) return;
-  for (const sufijo of ['', '-wal', '-shm']) {
-    try {
-      fs.rmSync(archivoDePrueba + sufijo, { force: true });
-    } catch {
-      // En Windows el archivo puede quedar tomado un instante más; no es motivo para fallar.
-    }
-  }
+  return process.env.MONGODB_URI;
 }
 
 async function bajarLaBaseTemporal() {
@@ -78,9 +58,12 @@ async function bajarLaBaseTemporal() {
     await baseDeDatos.cerrar();
     baseDeDatos = null;
   }
-  delete process.env.TURSO_DATABASE_URL;
-  borrarElArchivoDePrueba();
-  archivoDePrueba = null;
+  if (mongoDePrueba) {
+    await mongoDePrueba.stop();
+    mongoDePrueba = null;
+  }
+  delete process.env.MONGODB_URI;
+  delete process.env.MONGODB_DB;
 }
 
 // -- Levantar y bajar la aplicación ----------------------------------------------------------
@@ -114,7 +97,8 @@ async function arrancar(entornoExtra) {
     stdio: 'ignore',
     env: {
       ...process.env,
-      TURSO_DATABASE_URL: direccionDeLaBase,
+      MONGODB_URI: direccionDeLaBase,
+      MONGODB_DB: process.env.MONGODB_DB,
       ...entornoExtra,
     },
   });
