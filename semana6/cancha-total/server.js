@@ -179,7 +179,7 @@ function layout(titulo, contenido) {
   <a href="/disponibilidad/cancha1">Cancha 1</a>
   <a href="/disponibilidad/cancha2">Cancha 2</a>
 </nav>
-<h1>Cancha Total F5</h1>
+<h1>Cancha Total Fútbol 5</h1>
 ${contenido}
 </body>
 </html>`;
