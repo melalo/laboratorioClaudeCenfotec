@@ -2,11 +2,28 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-# Contexto del proyecto — Semana 5 (SINT-732)
+# Contexto del proyecto — Semana 6 (SINT-732)
 
-Esta carpeta contiene el trabajo de la semana 5 del curso "Laboratorio Ejecutivo en Claude Code"
+Esta carpeta contiene el trabajo de la semana 6 del curso "Laboratorio Ejecutivo en Claude Code"
 (Universidad CENFOTEC). Aplican las reglas del `CLAUDE.md` de la carpeta madre; acá va solo lo
 específico de esta consigna.
+
+## De dónde sale esta carpeta
+
+`semana6/` **arrancó como una copia exacta, byte a byte, de `semana5/`** (verificado con
+`diff -rq`): la especificación reconstruida, las 48 pruebas, `HALLAZGOS.md`, `verificar.sh` y el
+hook `Stop`. Se copió a propósito, para tener ese trabajo como punto de partida en vez de empezar
+de cero.
+
+**Consecuencia, mientras la consigna nueva no esté escrita:** todo lo que sigue en este archivo
+—«Qué se pide», el encargo, los entregables— describe todavía el **Caso Práctico 5**, que es el
+trabajo heredado. El nombre del archivo de consigna se deja tal cual porque es un archivo real que
+existe en la raíz del repositorio madre; cambiarlo dejaría la referencia apuntando a algo que no
+existe.
+
+Lo único que se sabe hoy de la semana 6: se trabaja con la **CLI de Vercel** sobre esta carpeta,
+usando Git. El resto se escribe acá en cuanto esté definido, y ahí se reemplazan las secciones
+heredadas.
 
 ## Qué se pide
 
