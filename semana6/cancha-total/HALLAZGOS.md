@@ -1,0 +1,281 @@
+# Hallazgos
+
+Lo que la suite descubrió y **esta etapa no corrige**. Cada hallazgo de comportamiento tiene su
+prueba escrita, corriendo, y marcada como **fallo esperado** con su número. Se cierran en el turno
+de refactorización, quitando la marca — y el avance se mide contando marcas quitadas.
+
+Levantado el **2026-08-23**, contra [`ESPECIFICACION.md`](ESPECIFICACION.md) y sobre el sistema tal
+como lo entregó el proveedor (commit `65ce4b4`).
+
+## Estado de la suite
+
+```
+48 pruebas · 42 en verde · 0 fallos · 6 marcadas como fallo esperado
+```
+
+Eran 40 cuando se escribió la suite. Las 8 que se sumaron son las que **no se podían escribir**
+hasta que se pagó H-14: las que dependen de la hora del reloj.
+
+La marca de fallo esperado es lo que permite que la puerta sirva desde hoy: la prueba queda escrita
+tal cual, corre, imprime su motivo, y **no rompe la verificación**. Sin eso, un `verificar.sh` que
+siempre falla se ignora en dos horas.
+
+## Las dos clases, y por qué se separan
+
+- **Comportamiento** — el código hace algo que contradice la especificación. Se arregla cambiando
+  lo que el sistema hace.
+- **Estructura** — la condición no se puede probar sin cambiar el código. No hay nada mal en lo que
+  el sistema hace; lo que estorba es cómo está armado.
+
+Son dos trabajos distintos y van en commits distintos: en un commit de estructura, la suite da lo
+mismo antes y después.
+
+---
+
+## Comportamiento
+
+| # | Condición | Qué hace hoy | Prueba |
+|---|---|---|---|
+| **H-01** ✅ **CERRADO** | **E-06, E-10** · Un bloque que empieza entre las 17:00 y las 21:00 cuesta ₡20.000, porque a las 17:00 se enciende la luz | Cobraba ₡15.000 a las 17:00 y solo subía a ₡20.000 desde las 18:00. Al cliente frecuente le cobraba ₡13.500 en vez de ₡18.000. Estaba escrito en los tres lugares que calculaban la tarifa, así que el defecto aparecía tres veces | `pruebas/tarifas.test.js::P-03`, `::P-05`, `pruebas/descuento.test.js::P-14` |
+| **H-02** | **E-08** · Para el descuento solo cuentan las reservas activas; las canceladas no | El conteo del mes incluye las canceladas, así que quien aparta y cancela llega al 10% sin haber jugado | `pruebas/descuento.test.js::P-10` |
+| **H-03** ✅ **CERRADO** | **E-11** · El teléfono es obligatorio | Se podía reservar sin teléfono. Efecto de segundo orden: el conteo del descuento agrupa por teléfono, así que **todas las reservas sin teléfono se sumaban entre sí** y le regalaban el 10% a un desconocido | `pruebas/datos-de-la-reserva.test.js::P-15` |
+| **H-04** ✅ **CERRADO** | **E-12** · El teléfono son exactamente 8 dígitos | No se revisaba nada: entraba un teléfono de 3 dígitos, de 20, o con letras. El cliente dejaba de ser ubicable, que es para lo que se pide el teléfono | `pruebas/datos-de-la-reserva.test.js::P-16`, `::P-17`, `::P-18` |
+| **H-05** | **E-40** · La fecha tiene que existir en el calendario | Solo se revisa la forma «cuatro dígitos, guion, dos, guion, dos». Se acepta el 30 de febrero, y la reserva queda en un día al que nadie puede llegar | `pruebas/datos-de-la-reserva.test.js::P-23` |
+| **H-06** | **E-19** · Solo se reserva un bloque que todavía no empezó | Se acepta cualquier fecha, incluso del año pasado | `pruebas/reservar-en-el-tiempo.test.js::P-29`, `pruebas/reservar-a-tiempo.test.js::P-46`, `::P-47` |
+| **H-07** | **E-35** · El nombre y el teléfono se muestran siempre como texto | Se insertan en la página sin limpiarlos, así que un nombre con signos de código lo ejecuta el navegador en vez de mostrarlo. En el caso leve descuadra la pantalla; en el grave, un nombre de cliente puede dejar código que corre cuando la administradora abre la lista del día | `pruebas/lo-que-se-ve.test.js::P-38` |
+| **H-08** ✅ **CERRADO** | **E-33** · El precio que se muestra antes de confirmar es el que se va a cobrar | La cotización miraba solo el horario y nunca el cliente: mostraba ₡15.000 y cobraba ₡13.500 | `pruebas/lo-que-se-ve.test.js::P-39` |
+| **H-09** ✅ **CERRADO** | **E-34** · Sin el teléfono completo se avisa que falta para saber el precio | Mostraba un número pelado, que podía no ser el que se cobra, y no lo decía | `pruebas/lo-que-se-ve.test.js::P-40` |
+| **H-10** ✅ **CERRADO** | **E-21, E-22, E-23** · Se puede cancelar hasta 24 horas antes de la hora de inicio del partido, y el borde exacto es inclusive | **Comparaba solo días, sin mirar la hora**: cancelaba cualquier reserva de un día posterior a hoy. Fallaba en un solo sentido —**dejaba cancelar lo que debía cobrarse**— y el caso era el que la administradora describió: partido mañana a las 8:00, ya las 23:00 de hoy, faltan 9 horas, y lo cancelaba igual. Pasaba con cualquier partido de mañana cuya hora ya había pasado hoy. Los demás casos coincidían con la condición por casualidad: un partido de hoy está siempre a menos de 24 horas, y uno de dentro de dos días o más está siempre a más. El mensaje de rechazo hablaba de 24 horas, pero la comprobación que hacía era otra | `pruebas/cancelar-a-tiempo.test.js::P-41`, `::P-45`, `pruebas/cancelar-en-el-borde.test.js::P-43` |
+
+## Estructura
+
+| # | Qué no se puede probar, y qué estorba | Prueba |
+|---|---|---|
+| **H-11** | `server.js` no exporta nada y arranca a escuchar en cuanto se carga. **Ninguna regla se puede probar por separado**: para comprobar una tarifa hay que levantar la aplicación completa. Es la razón por la que la tarifa y el descuento, que son cálculos con bordes y les correspondería nivel unidad, se prueban a nivel integración | Sin prueba propia: se ve en el andamio que las 48 pruebas necesitan (`pruebas/servidor-de-pruebas.js`) |
+| **H-12** | La base de datos está en una ruta fija dentro del código. La suite tiene que **apartar la base real y devolverla al terminar**, con el riesgo de perderla si una corrida se corta a la mitad | Sin prueba propia |
+| **H-13** | El puerto 3000 está fijo en el código. La verificación **no puede correr con otra aplicación en ese puerto**, y si algo más lo está usando, las pruebas le hablan a la aplicación equivocada. Pasó de verdad la primera vez que se corrió esta suite: contestó otra aplicación y todo dio resultados inventados. El andamio ahora lo detecta y aborta con un mensaje claro, pero rodearlo no es arreglarlo | Sin prueba propia |
+| **H-14** ✅ **PAGADA** | El reloj se lee directo del sistema y **no había manera de fijarlo desde una prueba**. Mientras fue así, H-10 no tenía prueba: cualquier prueba de la regla de las 24 horas daba un resultado distinto según la hora en que se corriera, y una prueba que falla una de cada diez corridas destruye la puerta de calidad. Bloqueaba también el borde de E-20. Era la deuda que estaba en el camino: sin pagarla, la regla de las 24 horas no se podía arreglar con red | Pagada el 2026-08-23. Las 8 pruebas que desbloqueó son la evidencia; ver más abajo |
+| **H-17** ✅ **PAGADA** | La regla de «el teléfono son 8 dígitos» quedó escrita **dos veces**: en la validación al crear la reserva y en la cotización. La misma clase de deuda que H-15. *La introdujo el arreglo de H-08 y H-09 el 2026-08-23; se anota en lugar de taparse* | Sin prueba propia |
+| **H-16** ✅ **PAGADA** | El cálculo del precio con descuento vivía **dentro de la ruta que crea la reserva**, así que era el único lugar del programa capaz de calcular un precio completo. La cotización previa no podía preguntárselo y mostraba solo la tarifa del horario: de ahí venía que la pantalla dijera un número y se cobrara otro. *Es un caso concreto de H-11, y no salió de la suite: apareció el 2026-08-23 al abrirle el camino a H-08. Se anota igual, con su origen declarado, porque un hallazgo sin registro no existe* | Sin prueba propia: lo que lo delata son P-39 y P-40 |
+| **H-15** ✅ **PAGADA** | La tarifa estaba escrita **tres veces** —en la portada, al crear la reserva y en la cotización—. Corregir la hora de la luz obliga a tocar los tres lugares, y tocar uno solo deja la aplicación mostrando un precio y cobrando otro | `pruebas/tarifas.test.js::P-05` la comprueba de refilón: exige que los tres caminos digan lo mismo |
+
+---
+
+## Lo que quedó sin cubrir, y por qué
+
+No es lo mismo «no falla» que «no se probó». Esto es lo segundo:
+
+| Condición | Por qué no tiene prueba |
+|---|---|
+| E-25 · una cancelada no se revive | No hay forma de intentarlo: el sistema no ofrece la operación |
+| E-31, E-32 · el día de hoy por defecto, consultar cualquier fecha | Se ejercitan de refilón en casi todas las pruebas, no tienen prueba propia |
+| E-36 a E-39, E-41 · lo que el sistema no hace | Una prueba que fije una ausencia impediría agregarla después |
+
+## Cerrados, con su evidencia
+
+### H-14 · el reloj no se podía fijar — **pagada** el 2026-08-23
+
+El reloj quedó en un solo lugar, la función `ahora()`, que sin nada configurado devuelve la hora
+del sistema igual que antes. La variable de entorno `CANCHA_TOTAL_AHORA` permite fijarlo desde una
+prueba, en formato local sin zona: `2026-08-25T23:00:00`.
+
+Es un cambio de estructura, no de comportamiento, y la prueba de eso es que **la suite dio lo
+mismo antes y después**:
+
+```
+antes:   40 pruebas · pass 27 · fail 0 · todo 13 · código de salida 0
+después: 40 pruebas · pass 27 · fail 0 · todo 13 · código de salida 0
+```
+
+Con esto se desbloquea H-10: las condiciones E-20, E-21 y E-22 ya se pueden probar.
+
+### H-10 · la regla de las 24 horas — **cerrado** el 2026-08-23
+
+La comprobación pasó de comparar fechas a medir cuánto falta hasta la **hora de inicio** del
+partido, con el borde inclusive: si faltan 24 horas justas, todavía se cancela. El mensaje de
+rechazo pasó a nombrar el inicio del partido en lugar de «el bloque», que es lo que E-23 pedía.
+
+La evidencia de que las pruebas no se ablandaron para lograrlo: el commit del arreglo **solo borra
+líneas** de los archivos de prueba —las tres marcas de fallo esperado— y no agrega ninguna.
+
+```
+pruebas/cancelar-a-tiempo.test.js      0 líneas agregadas, 2 borradas
+pruebas/cancelar-en-el-borde.test.js   0 líneas agregadas, 1 borrada
+```
+
+Las cinco pruebas de la regla quedaron en verde, incluidas las dos que ya pasaban antes y que
+estaban ahí justamente para que el arreglo no se pasara de estricto:
+
+```
+P-41  partido mañana 8:00, faltan 9 horas  -> no se cancela   ✔ (era rojo)
+P-42  faltan exactamente 24 horas          -> se cancela      ✔
+P-43  faltan 23 horas                      -> no se cancela   ✔ (era rojo)
+P-44  faltan 33 horas                      -> se cancela      ✔
+P-45  el mensaje nombra el plazo            -> lo nombra       ✔ (era rojo)
+```
+
+Estado de la suite: de `pass 30 / todo 18` a `pass 33 / todo 15`. Tres marcas menos, que es como
+se mide el avance.
+
+### H-15 · la tarifa estaba escrita tres veces — **pagada** el 2026-08-23
+
+El cálculo quedó en una sola función, `tarifaDelBloque(hora)`, con sus tres valores como
+constantes con nombre: `TARIFA_DIURNA`, `TARIFA_CON_LUZ` y `HORA_EN_QUE_SE_ENCIENDE_LA_LUZ`. Los
+tres caminos —la portada, la creación de la reserva y la cotización— preguntan ahí.
+
+**La hora de la luz sigue en las 18:00 en este commit**, a propósito: mover la tarifa de lugar y
+cambiar cuánto se cobra son dos trabajos distintos. La prueba de que solo cambió la estructura es
+que la suite dio lo mismo antes y después:
+
+```
+antes:   48 pruebas · pass 33 · fail 0 · todo 15 · código de salida 0
+después: 48 pruebas · pass 33 · fail 0 · todo 15 · código de salida 0
+```
+
+Con esto, H-01 se arregla cambiando **un número en un solo lugar** en vez de tres, y ya no existe
+la manera de dejar la aplicación mostrando un precio y cobrando otro.
+
+### H-01 · la luz se cobraba desde las 18:00 — **cerrado** el 2026-08-23
+
+Un número, en un solo lugar: `HORA_EN_QUE_SE_ENCIENDE_LA_LUZ` pasó de 18 a 17. Eso fue todo el
+arreglo, y solo fue así de chico porque H-15 se pagó primero. Antes de pagarla, el mismo arreglo
+eran tres cambios y la posibilidad de que uno quedara atrás.
+
+La evidencia de que las pruebas no se ablandaron: el commit del arreglo **solo borra líneas** de
+los archivos de prueba —las tres marcas de fallo esperado— y no agrega ninguna.
+
+```
+pruebas/tarifas.test.js     0 líneas agregadas, 2 borradas
+pruebas/descuento.test.js   0 líneas agregadas, 1 borrada
+```
+
+Las pruebas de la tarifa quedaron todas en verde, incluidas las cuatro que ya pasaban y que
+estaban ahí para que el arreglo no se desbordara hacia el día:
+
+```
+P-01  el bloque de las 8:00 cuesta ₡15.000            ✔
+P-02  el bloque de las 16:00 cuesta ₡15.000            ✔   ← el borde por abajo
+P-03  el bloque de las 17:00 cuesta ₡20.000            ✔ (era rojo)
+P-04  el bloque de las 21:00 cuesta ₡20.000            ✔
+P-05  los tres caminos cobran ₡20.000 a las 17:00      ✔ (era rojo)
+P-13  con descuento, un bloque diurno son ₡13.500      ✔
+P-14  con descuento, las 17:00 son ₡18.000             ✔ (era rojo)
+```
+
+P-02 es la que importa vigilar: si el arreglo se hubiera pasado de la raya y adelantado la luz a
+las 16:00, se habría puesto roja.
+
+Estado de la suite: de `pass 33 / todo 15` a `pass 36 / todo 12`.
+
+### H-03 y H-04 · el teléfono no era obligatorio ni se validaba — **cerrados** el 2026-08-23
+
+Los dos se cerraron con la misma validación, porque son la misma regla partida en dos: el teléfono
+es obligatorio (E-11) y son exactamente 8 dígitos (E-12). Se sumaron cuatro líneas a las
+validaciones que ya existían al crear la reserva, con dos mensajes distintos según el caso: falta,
+o no tiene la forma correcta.
+
+**Esta pareja no tenía deuda de estructura en el camino, y no se inventó ninguna.** Las
+validaciones ya estaban todas juntas en un solo lugar y la nueva entró al lado de las otras.
+
+Efecto de segundo orden que se cierra de arrastre: el conteo del descuento agrupa por teléfono, y
+con el teléfono vacío permitido, las reservas sin teléfono de personas distintas se sumaban entre
+sí. Ya no puede volver a pasar, porque no se puede crear una reserva sin teléfono.
+
+La evidencia de que las pruebas no se ablandaron: en el archivo de prueba cambiaron **cuatro
+líneas**, y lo único que cambió en cada una fue que se le quitó la marca de fallo esperado. Estas
+cuatro pruebas están escritas en una sola línea, así que el diff no puede ser «cero agregadas»
+como en los cierres anteriores; lo que se compara es el contenido:
+
+```
+-test('P-15 · sin teléfono no se crea la reserva', { todo: 'H-03' }, async () => {
++test('P-15 · sin teléfono no se crea la reserva', async () => {
+```
+
+El nombre, el cuerpo y las aserciones quedaron idénticos en las cuatro.
+
+```
+P-15  sin teléfono no se crea la reserva      ✔ (era rojo)
+P-16  un teléfono de 7 dígitos se rechaza     ✔ (era rojo)
+P-17  un teléfono de 9 dígitos se rechaza     ✔ (era rojo)
+P-18  un teléfono con letras se rechaza       ✔ (era rojo)
+P-19  un teléfono de 8 dígitos se acepta      ✔   ← el freno
+```
+
+P-19 es la que vigila que la validación no se pase de dura y rechace un teléfono válido.
+
+Estado de la suite: de `pass 36 / todo 12` a `pass 40 / todo 8`.
+
+### H-16 · el precio con descuento vivía dentro de la ruta — **pagada** el 2026-08-23
+
+El cálculo quedó en una sola función, `precioDeLaReserva({ hora, fecha, telefono })`, que devuelve
+el monto **y si el descuento aplicó** —porque quien muestra un precio necesita poder explicar por
+qué es ese—. La ruta que crea la reserva ahora se lo pregunta en lugar de calcularlo.
+
+**La cotización sigue sin usarla en este commit**, a propósito: mover el cálculo de lugar y cambiar
+lo que la pantalla muestra son dos trabajos distintos. La prueba de que solo cambió la estructura es
+que la suite dio lo mismo antes y después:
+
+```
+antes:   48 pruebas · pass 40 · fail 0 · todo 8 · código de salida 0
+después: 48 pruebas · pass 40 · fail 0 · todo 8 · código de salida 0
+```
+
+El conteo del mes se movió tal cual, **incluidas las reservas canceladas**. Eso sigue estando mal y
+sigue siendo H-02: un commit de estructura no arregla defectos, ni siquiera cuando los tiene
+delante.
+
+### H-08 y H-09 · el precio que se mostraba no era el que se cobraba — **cerrados** el 2026-08-23
+
+Los dos se cerraron juntos porque son las dos caras de la misma pantalla: qué muestra cuando se
+puede saber el precio, y qué muestra cuando todavía no.
+
+Con el teléfono completo, la cotización le pregunta el precio a `precioDeLaReserva` —la misma
+función que usa la ruta que cobra— y agrega la explicación: «₡13.500 (con 10% de descuento por
+cliente frecuente)». Los dos caminos ya no pueden dar respuestas distintas, porque son el mismo
+cálculo.
+
+Sin el teléfono completo, muestra la tarifa del bloque y lo dice: «₡15.000 (escribí el teléfono
+para saber si aplica descuento)». El formulario ahora vuelve a preguntar el precio cuando la
+persona escribe el teléfono, no solo cuando cambia la hora.
+
+La evidencia de que las pruebas no se ablandaron: el commit del arreglo **solo borra líneas** de
+los archivos de prueba —las dos marcas— y no agrega ninguna.
+
+```
+pruebas/lo-que-se-ve.test.js   0 líneas agregadas, 2 borradas
+
+P-39  el precio mostrado incluye el descuento          ✔ (era rojo)
+P-40  sin teléfono, se avisa que falta                 ✔ (era rojo)
+```
+
+Estado de la suite: de `pass 40 / todo 8` a `pass 42 / todo 6`.
+
+**Este arreglo dejó una deuda nueva**, anotada como H-17 en vez de taparse: la regla de los 8
+dígitos quedó escrita dos veces, en la validación del formulario y en la cotización. Es la misma
+clase de deuda que H-15. Se pagó en el commit siguiente.
+
+### H-17 · la regla del teléfono estaba escrita dos veces — **pagada** el 2026-08-23
+
+La deuda duró un commit: la creó el arreglo de H-08 y H-09, y se pagó en el siguiente. La regla
+quedó en la función `telefonoEsValido(telefono)`, que preguntan la validación del formulario y la
+cotización.
+
+Suite igual antes y después, como corresponde a un cambio de estructura:
+
+```
+antes:   48 pruebas · pass 42 · fail 0 · todo 6 · código de salida 0
+después: 48 pruebas · pass 42 · fail 0 · todo 6 · código de salida 0
+```
+
+Vale la pena que quede escrito **cómo apareció**: no la encontró la suite ni una revisión posterior,
+sino que se vio al escribir el arreglo, se anotó con su número antes de pagarla, y se pagó aparte.
+La alternativa —arreglarla dentro del mismo commit— habría dejado un commit que cambia
+comportamiento y estructura a la vez, y ahí ya no se puede saber cuál de los dos rompió algo si
+algo se rompe.
+
+## Cómo se cierra un hallazgo
+
+1. Se arregla el código de producción hasta que su prueba pase **sin tocar la prueba**.
+2. Se quita la marca `todo` de esa prueba.
+3. Se anota acá la evidencia: la corrida en que pasó.
+4. Estructura y comportamiento, en commits separados.
