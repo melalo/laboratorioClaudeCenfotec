@@ -52,7 +52,7 @@ mismo antes y después.
 | # | Qué no se puede probar, y qué estorba | Prueba |
 |---|---|---|
 | **H-11** | `server.js` no exporta nada y arranca a escuchar en cuanto se carga. **Ninguna regla se puede probar por separado**: para comprobar una tarifa hay que levantar la aplicación completa. Es la razón por la que la tarifa y el descuento, que son cálculos con bordes y les correspondería nivel unidad, se prueban a nivel integración | Sin prueba propia: se ve en el andamio que las 48 pruebas necesitan (`pruebas/servidor-de-pruebas.js`) |
-| **H-12** | La base de datos está en una ruta fija dentro del código. La suite tiene que **apartar la base real y devolverla al terminar**, con el riesgo de perderla si una corrida se corta a la mitad | Sin prueba propia |
+| **H-12** ✅ **PAGADA** | La base de datos estaba en una ruta fija dentro del código. La suite tenía que **apartar la base real y devolverla al terminar**, con el riesgo de perderla si una corrida se cortaba a la mitad | Pagada el 2026-08-25; ver más abajo. Sin prueba propia |
 | **H-13** | El puerto 3000 está fijo en el código. La verificación **no puede correr con otra aplicación en ese puerto**, y si algo más lo está usando, las pruebas le hablan a la aplicación equivocada. Pasó de verdad la primera vez que se corrió esta suite: contestó otra aplicación y todo dio resultados inventados. El andamio ahora lo detecta y aborta con un mensaje claro, pero rodearlo no es arreglarlo | Sin prueba propia |
 | **H-14** ✅ **PAGADA** | El reloj se lee directo del sistema y **no había manera de fijarlo desde una prueba**. Mientras fue así, H-10 no tenía prueba: cualquier prueba de la regla de las 24 horas daba un resultado distinto según la hora en que se corriera, y una prueba que falla una de cada diez corridas destruye la puerta de calidad. Bloqueaba también el borde de E-20. Era la deuda que estaba en el camino: sin pagarla, la regla de las 24 horas no se podía arreglar con red | Pagada el 2026-08-23. Las 8 pruebas que desbloqueó son la evidencia; ver más abajo |
 | **H-17** ✅ **PAGADA** | La regla de «el teléfono son 8 dígitos» quedó escrita **dos veces**: en la validación al crear la reserva y en la cotización. La misma clase de deuda que H-15. *La introdujo el arreglo de H-08 y H-09 el 2026-08-23; se anota en lugar de taparse* | Sin prueba propia |
@@ -72,6 +72,25 @@ No es lo mismo «no falla» que «no se probó». Esto es lo segundo:
 | E-36 a E-39, E-41 · lo que el sistema no hace | Una prueba que fije una ausencia impediría agregarla después |
 
 ## Cerrados, con su evidencia
+
+### H-12 · la base estaba en una ruta fija — **pagada** el 2026-08-25
+
+La dirección de la base dejó de estar escrita en el código: se lee de la variable de entorno
+`TURSO_DATABASE_URL`, y solo si no está se cae al archivo `reservas.db` de la carpeta. Es la misma
+variable que usa el despliegue para apuntar a Turso.
+
+Eso es lo que le permite a la suite dejar de manosear la base real: cada corrida crea su **propia
+base vacía en un archivo temporal del sistema**, le pasa esa dirección a la aplicación por el
+entorno, y la borra al terminar. `reservas.db` no se abre en ningún momento, así que ya no hay nada
+que apartar ni nada que perder.
+
+Es un cambio de estructura, no de comportamiento, y la prueba de eso es que **la suite dio lo
+mismo antes y después**:
+
+```
+antes:   48 pruebas · pass 42 · fail 0 · 6 fallos esperados · código de salida 0
+después: 48 pruebas · pass 42 · fail 0 · 6 fallos esperados · código de salida 0
+```
 
 ### H-14 · el reloj no se podía fijar — **pagada** el 2026-08-23
 

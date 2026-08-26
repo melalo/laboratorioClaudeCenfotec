@@ -25,5 +25,5 @@ test('P-29 · no se reserva una fecha que ya pasó', { todo: 'H-06' }, async () 
   await s.reservar({
     cancha: 1, fecha: fechaPasada, hora: 21, cliente: 'Partido de ayer', telefono: '88112233',
   });
-  assert.equal(s.buscarReserva({ cancha: 1, fecha: fechaPasada, hora: 21 }), undefined);
+  assert.equal(await s.buscarReserva({ cancha: 1, fecha: fechaPasada, hora: 21 }), undefined);
 });

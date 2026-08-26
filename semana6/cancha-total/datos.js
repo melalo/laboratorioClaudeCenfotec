@@ -1,32 +1,11 @@
-// Borra reservas.db y la recrea con reservas de ejemplo variadas.
+// Borra las reservas y las recrea con datos de ejemplo.
 // Uso: npm run datos
+//
+// Trabaja contra la misma base que `server.js`, porque los dos le preguntan a `basededatos.js`:
+// el archivo `reservas.db` de esta carpeta si no hay nada configurado, o la base de Turso si esta
+// puesta la variable TURSO_DATABASE_URL. Este archivo no sabe cual de los dos es, y no le hace falta.
 
-const fs = require('fs');
-const path = require('path');
-const Database = require('better-sqlite3');
-
-const RUTA_DB = path.join(__dirname, 'reservas.db');
-
-if (fs.existsSync(RUTA_DB)) {
-  fs.unlinkSync(RUTA_DB);
-  console.log('Base de datos anterior borrada.');
-}
-
-const db = new Database(RUTA_DB);
-
-db.exec(`
-  CREATE TABLE reservas (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    cancha INTEGER NOT NULL,
-    fecha TEXT NOT NULL,
-    hora INTEGER NOT NULL,
-    cliente TEXT NOT NULL,
-    telefono TEXT,
-    precio INTEGER NOT NULL,
-    estado TEXT NOT NULL DEFAULT 'activa',
-    creada_en TEXT NOT NULL DEFAULT (datetime('now'))
-  )
-`);
+const baseDeDatos = require('./basededatos');
 
 function fechaISO(offsetDias) {
   const d = new Date();
@@ -35,11 +14,6 @@ function fechaISO(offsetDias) {
   const dia = String(d.getDate()).padStart(2, '0');
   return `${d.getFullYear()}-${mes}-${dia}`;
 }
-
-const insertar = db.prepare(`
-  INSERT INTO reservas (cancha, fecha, hora, cliente, telefono, precio, estado)
-  VALUES (@cancha, @fecha, @hora, @cliente, @telefono, @precio, @estado)
-`);
 
 const reservas = [
   { cancha: 1, fecha: fechaISO(0), hora: 9, cliente: 'Marco Jiménez', telefono: '88112233', precio: 15000, estado: 'activa' },
@@ -54,9 +28,23 @@ const reservas = [
   { cancha: 2, fecha: fechaISO(4), hora: 12, cliente: 'Paola Vindas', telefono: '85667788', precio: 15000, estado: 'activa' },
 ];
 
-for (const r of reservas) {
-  insertar.run(r);
+async function recrear() {
+  // Esto es un DROP TABLE: borra la tabla entera y de paso reinicia la numeracion, que es lo que
+  // hace que la primera reserva nueva vuelva a ser la #1. Antes se borraba el archivo entero, pero
+  // contra una base remota no hay archivo que borrar; asi funciona igual en los dos destinos.
+  await baseDeDatos.vaciarTodo();
+  console.log('Reservas anteriores borradas.');
+
+  for (const r of reservas) {
+    await baseDeDatos.insertarReserva(r);
+  }
+
+  console.log(`Base de datos recreada con ${reservas.length} reservas de ejemplo.`);
 }
 
-console.log(`Base de datos recreada con ${reservas.length} reservas de ejemplo.`);
-db.close();
+recrear()
+  .catch((error) => {
+    console.error('No se pudieron recrear los datos:', error.message);
+    process.exitCode = 1;
+  })
+  .finally(() => baseDeDatos.cerrar());

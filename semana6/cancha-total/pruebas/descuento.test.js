@@ -69,7 +69,7 @@ test(
     });
 
     await s.cancelar(numeros[0]);
-    assert.equal(s.leerReserva(numeros[0]).estado, 'cancelada', 'no se pudo cancelar la primera');
+    assert.equal((await s.leerReserva(numeros[0])).estado, 'cancelada', 'no se pudo cancelar la primera');
 
     const cuarta = await s.reservar({
       cancha: 1, fecha: `${mes}-15`, hora: 9, cliente: 'Aparta y cancela', telefono,
@@ -121,7 +121,7 @@ test('P-13 · con descuento, un bloque diurno queda cobrado en ₡13.500', async
   const cuarta = await s.reservar({
     cancha: 2, fecha: `${mes}-12`, hora: 9, cliente: 'Diurno con descuento', telefono,
   });
-  const guardada = s.leerReserva(s.numeroDeLaReserva(cuarta));
+  const guardada = await s.leerReserva(s.numeroDeLaReserva(cuarta));
   assert.equal(guardada.precio, 13500);
 });
 

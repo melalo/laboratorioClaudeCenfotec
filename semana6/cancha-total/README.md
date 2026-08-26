@@ -11,7 +11,7 @@ npm install
 
 ## Datos de prueba
 
-Borra `reservas.db` (si existe) y la recrea con reservas de ejemplo:
+Vacía la tabla de reservas y la recrea con reservas de ejemplo (sin preguntar):
 
 ```
 npm run datos
@@ -24,6 +24,27 @@ npm start
 ```
 
 El servidor queda escuchando en el puerto 3000: http://localhost:3000
+
+## Dónde vive la base de datos
+
+La aplicación usa SQLite a través de la biblioteca `@libsql/client`, que sabe hablarle a dos
+destinos con exactamente el mismo SQL:
+
+| Si está configurado | La base es | Cuándo se usa |
+|---|---|---|
+| nada | el archivo `reservas.db` de esta carpeta | en la computadora: `npm start`, `npm run datos` y las pruebas. Sin internet |
+| `TURSO_DATABASE_URL` y `TURSO_AUTH_TOKEN` | la base alojada en **Turso** (SQLite en la nube) | en el despliegue |
+
+No hay dos versiones del código: es la misma aplicación con dos destinos posibles. En el
+despliegue la base remota no es opcional, porque el disco de un servidor sin estado se borra entre
+una visita y la siguiente y las reservas se perderían.
+
+**Todas las consultas viven en un solo archivo, [`basededatos.js`](basededatos.js).** Antes el SQL
+estaba escrito tres veces —en `server.js`, en `datos.js` y en el andamio de las pruebas—; ahora
+quien necesita un dato le pide a ese archivo «contame las reservas activas de este bloque» y no
+necesita saber cómo se le pregunta a la base.
+
+**Las dos variables son credenciales: no se escriben en el código ni se suben al repositorio.**
 
 ## Verificar
 
@@ -47,9 +68,9 @@ que corre la misma suite y también termina en 0 o distinto de 0. La diferencia 
 es el comando único de la puerta —el que llama el hook— y `npm test` corre solo las pruebas.
 
 **El puerto 3000 tiene que estar libre.** Está fijo en `server.js`, así que la verificación no
-puede correr con otra aplicación levantada ahí; si eso pasa, la suite aborta diciéndolo. Y la suite
-aparta la base de datos real mientras corre, y la devuelve a su lugar al terminar: los datos no se
-tocan.
+puede correr con otra aplicación levantada ahí; si eso pasa, la suite aborta diciéndolo. **Tus
+datos no se tocan:** cada corrida se hace su propia base vacía en un archivo temporal del sistema y
+la borra al terminar, así que `reservas.db` no se abre siquiera.
 
 Algunas pruebas aparecen con `⚠` y un número `H-NN`: son **fallos esperados**, defectos ya
 conocidos que están anotados y todavía no corregidos. No rompen la verificación a propósito, para

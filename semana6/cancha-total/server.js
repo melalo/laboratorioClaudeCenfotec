@@ -1,29 +1,40 @@
 // Cancha Total F5 - sistema de reservas
-// Node + Express + better-sqlite3, vistas renderizadas en el servidor.
+// Node + Express + SQLite (via @libsql/client), vistas renderizadas en el servidor.
 
 const express = require('express');
-const Database = require('better-sqlite3');
-const path = require('path');
+const baseDeDatos = require('./basededatos');
 
 const app = express();
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-const db = new Database(path.join(__dirname, 'reservas.db'));
+// Este archivo ya no escribe ni una consulta: se las pide a `basededatos.js`, que es el unico que
+// sabe como se le pregunta a la base. Antes aca vivia el SQL, y estaba escrito tambien en
+// `datos.js` y en el andamio de las pruebas: tres copias que podian quedar distintas entre si.
 
-db.exec(`
-  CREATE TABLE IF NOT EXISTS reservas (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    cancha INTEGER NOT NULL,
-    fecha TEXT NOT NULL,
-    hora INTEGER NOT NULL,
-    cliente TEXT NOT NULL,
-    telefono TEXT,
-    precio INTEGER NOT NULL,
-    estado TEXT NOT NULL DEFAULT 'activa',
-    creada_en TEXT NOT NULL DEFAULT (datetime('now'))
-  )
-`);
+// Envolver una ruta que consulta la base.
+//
+// Express 4 no sabe que hacer cuando una ruta `async` falla: la peticion se queda colgada para
+// siempre y el navegador gira sin fin. Este envoltorio agarra el error y se lo entrega a Express,
+// que responde con un 500 visible en vez de un silencio.
+function conBase(manejador) {
+  return (req, res, next) => Promise.resolve(manejador(req, res, next)).catch(next);
+}
+
+// La base tiene que estar lista antes de atender a nadie.
+//
+// Abrir la base lleva su tiempo -y si esta en Turso, viaja por internet-, asi que es una promesa. El `app.use` de abajo hace que cada
+// visita espere a que esa promesa termine antes de entrar a su ruta: sin el, la primera visita
+// podria llegar a una base que todavia no esta conectada.
+const baseLista = baseDeDatos.estaLista();
+
+// Si la conexion falla, el error se reporta en la primera visita, en el `app.use` de abajo. Este
+// `catch` vacio esta solo para que Node no tumbe el proceso entero mientras todavia no llego nadie.
+baseLista.catch(() => {});
+
+app.use((req, res, next) => {
+  baseLista.then(() => next(), next);
+});
 
 // -----------------------------------------------------------------------
 // Función vieja que ya no usa nadie. Quedó del primer borrador cuando se
@@ -78,16 +89,13 @@ function telefonoEsValido(telefono) {
   return /^\d{8}$/.test(telefono || '');
 }
 
-function precioDeLaReserva({ hora, fecha, telefono }) {
+async function precioDeLaReserva({ hora, fecha, telefono }) {
   const tarifa = tarifaDelBloque(hora);
 
   const mesDelPartido = fecha.slice(0, 7);
-  const conteoMes = db.prepare(
-    `SELECT COUNT(*) AS total FROM reservas
-     WHERE telefono = ? AND substr(fecha, 1, 7) = ?`
-  ).get(telefono, mesDelPartido);
+  const conteoMes = await baseDeDatos.contarDelTelefonoEnElMes(telefono, mesDelPartido);
 
-  const totalConEstaReserva = conteoMes.total + 1;
+  const totalConEstaReserva = conteoMes + 1;
   const aplicaDescuento = totalConEstaReserva >= 4;
 
   return {
@@ -100,26 +108,17 @@ function formatColones(monto) {
   return '₡' + Math.round(monto).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
 
-function checkDisponible(cancha, fecha, hora) {
-  const fila = db.prepare(
-    `SELECT COUNT(*) AS total FROM reservas
-     WHERE cancha = ? AND fecha = ? AND hora = ? AND estado = 'activa'`
-  ).get(cancha, fecha, hora);
-  return fila.total === 0;
+async function checkDisponible(cancha, fecha, hora) {
+  const activas = await baseDeDatos.contarActivasEnElBloque(cancha, fecha, hora);
+  return activas === 0;
 }
 
-function getReservasDelDia(fecha) {
-  return db.prepare(
-    `SELECT * FROM reservas WHERE fecha = ? ORDER BY cancha, hora`
-  ).all(fecha);
+async function getReservasDelDia(fecha) {
+  return baseDeDatos.reservasDelDia(fecha);
 }
 
-function crearReserva(datos) {
-  const info = db.prepare(
-    `INSERT INTO reservas (cancha, fecha, hora, cliente, telefono, precio, estado)
-     VALUES (?, ?, ?, ?, ?, ?, 'activa')`
-  ).run(datos.cancha, datos.fecha, datos.hora, datos.cliente, datos.telefono, datos.precio);
-  return info.lastInsertRowid;
+async function crearReserva(datos) {
+  return baseDeDatos.insertarReserva({ ...datos, estado: 'activa' });
 }
 
 // El reloj, en un solo lugar.
@@ -179,7 +178,7 @@ function layout(titulo, contenido) {
   <a href="/disponibilidad/cancha1">Cancha 1</a>
   <a href="/disponibilidad/cancha2">Cancha 2</a>
 </nav>
-<h1>Cancha Total F5</h1>
+<h1>Cancha Total Fútbol 5</h1>
 ${contenido}
 </body>
 </html>`;
@@ -187,7 +186,7 @@ ${contenido}
 
 // GET / -------------------------------------------------------------------
 // Disponibilidad del día para ambas canchas + formulario de reserva.
-app.get('/', (req, res) => {
+app.get('/', conBase(async (req, res) => {
   const fecha = req.query.fecha || hoyISO();
 
   let filasCancha1 = '';
@@ -196,10 +195,10 @@ app.get('/', (req, res) => {
     // Tarifa del bloque para pintar la disponibilidad.
     const precio = tarifaDelBloque(hora);
 
-    const libre1 = checkDisponible(1, fecha, hora);
+    const libre1 = await checkDisponible(1, fecha, hora);
     filasCancha1 += `<tr><td>${hora}:00</td><td class="${libre1 ? 'libre' : 'ocupado'}">${libre1 ? 'Libre' : 'Ocupado'}</td><td>${formatColones(precio)}</td></tr>`;
 
-    const libre2 = checkDisponible(2, fecha, hora);
+    const libre2 = await checkDisponible(2, fecha, hora);
     filasCancha2 += `<tr><td>${hora}:00</td><td class="${libre2 ? 'libre' : 'ocupado'}">${libre2 ? 'Libre' : 'Ocupado'}</td><td>${formatColones(precio)}</td></tr>`;
   }
 
@@ -253,14 +252,14 @@ app.get('/', (req, res) => {
 `;
 
   res.send(layout('Inicio', contenido));
-});
+}));
 
 // GET /disponibilidad/cancha1 y /disponibilidad/cancha2 -------------------
-app.get('/disponibilidad/cancha1', (req, res) => {
+app.get('/disponibilidad/cancha1', conBase(async (req, res) => {
   const fecha = req.query.fecha || hoyISO();
   let filas = '';
   for (let hora = 8; hora <= 21; hora++) {
-    const libre = checkDisponible(1, fecha, hora);
+    const libre = await checkDisponible(1, fecha, hora);
     filas += `<tr><td>${hora}:00</td><td class="${libre ? 'libre' : 'ocupado'}">${libre ? 'Libre' : 'Ocupado'}</td></tr>`;
   }
   const contenido = `
@@ -272,13 +271,13 @@ app.get('/disponibilidad/cancha1', (req, res) => {
 <table><tr><th>Hora</th><th>Estado</th></tr>${filas}</table>
 `;
   res.send(layout('Cancha 1', contenido));
-});
+}));
 
-app.get('/disponibilidad/cancha2', (req, res) => {
+app.get('/disponibilidad/cancha2', conBase(async (req, res) => {
   const fecha = req.query.fecha || hoyISO();
   let filas = '';
   for (let hora = 8; hora <= 21; hora++) {
-    const libre = checkDisponible(2, fecha, hora);
+    const libre = await checkDisponible(2, fecha, hora);
     filas += `<tr><td>${hora}:00</td><td class="${libre ? 'libre' : 'ocupado'}">${libre ? 'Libre' : 'Ocupado'}</td></tr>`;
   }
   const contenido = `
@@ -290,10 +289,10 @@ app.get('/disponibilidad/cancha2', (req, res) => {
 <table><tr><th>Hora</th><th>Estado</th></tr>${filas}</table>
 `;
   res.send(layout('Cancha 2', contenido));
-});
+}));
 
 // POST /reservas ------------------------------------------------------------
-app.post('/reservas', (req, res) => {
+app.post('/reservas', conBase(async (req, res) => {
   // Paso 1: leer y normalizar lo que mandó el formulario.
   const canchaTexto = req.body.cancha;
   const fecha = req.body.fecha;
@@ -346,17 +345,17 @@ app.post('/reservas', (req, res) => {
   }
 
   // Paso 3: verificar que el bloque siga libre.
-  const disponible = checkDisponible(cancha, fecha, hora);
+  const disponible = await checkDisponible(cancha, fecha, hora);
   if (!disponible) {
     const contenidoOcupado = `<div class="error">Ese bloque ya está ocupado para la cancha ${cancha} el ${fecha} a las ${hora}:00.</div><p><a href="/">Volver</a></p>`;
     return res.send(layout('Error', contenidoOcupado));
   }
 
   // Paso 4: calcular el precio, que es la tarifa del bloque con el descuento si aplica.
-  const { precio, aplicaDescuento } = precioDeLaReserva({ hora, fecha, telefono });
+  const { precio, aplicaDescuento } = await precioDeLaReserva({ hora, fecha, telefono });
 
   // Paso 6: guardar la reserva.
-  const id = crearReserva({ cancha, fecha, hora, cliente, telefono, precio });
+  const id = await crearReserva({ cancha, fecha, hora, cliente, telefono, precio });
 
   // Paso 7: armar la página de confirmación.
   const notaDescuento = aplicaDescuento ? ' (con 10% de descuento por cliente frecuente)' : '';
@@ -369,12 +368,12 @@ app.post('/reservas', (req, res) => {
 <p><a href="/dia/${fecha}">Ver lista del día</a> | <a href="/">Volver</a></p>
 `;
   res.send(layout('Reserva creada', contenido));
-});
+}));
 
 // POST /reservas/:id/cancelar ------------------------------------------------
-app.post('/reservas/:id/cancelar', (req, res) => {
+app.post('/reservas/:id/cancelar', conBase(async (req, res) => {
   const id = Number(req.params.id);
-  const reserva = db.prepare('SELECT * FROM reservas WHERE id = ?').get(id);
+  const reserva = await baseDeDatos.buscarPorNumero(id);
 
   if (!reserva) {
     return res.send(layout('Error', `<div class="error">No existe la reserva #${id}.</div>`));
@@ -395,17 +394,17 @@ app.post('/reservas/:id/cancelar', (req, res) => {
   const loQueFalta = inicioDelPartido.getTime() - ahora().getTime();
 
   if (loQueFalta >= VEINTICUATRO_HORAS_EN_MILISEGUNDOS) {
-    db.prepare(`UPDATE reservas SET estado = 'cancelada' WHERE id = ?`).run(id);
+    await baseDeDatos.cancelarPorNumero(id);
     return res.send(layout('Cancelada', `<div class="ok">Reserva #${id} cancelada.</div><p><a href="/dia/${reserva.fecha}">Volver</a></p>`));
   } else {
     return res.send(layout('Error', `<div class="error">La reserva #${id} no se puede cancelar: falta menos de 24 horas para el inicio del partido.</div><p><a href="/dia/${reserva.fecha}">Volver</a></p>`));
   }
-});
+}));
 
 // GET /dia/:fecha -------------------------------------------------------------
-app.get('/dia/:fecha', (req, res) => {
+app.get('/dia/:fecha', conBase(async (req, res) => {
   const fecha = req.params.fecha;
-  const reservas = getReservasDelDia(fecha);
+  const reservas = await getReservasDelDia(fecha);
 
   const filas = reservas.map(r => {
     const claseFila = r.estado === 'cancelada' ? 'cancelada' : '';
@@ -424,11 +423,11 @@ app.get('/dia/:fecha', (req, res) => {
 <p><a href="/?fecha=${fecha}">Volver a disponibilidad</a></p>
 `;
   res.send(layout('Reservas del día', contenido));
-});
+}));
 
 // GET /api/cotizar --------------------------------------------------------
 // Precio previo de un bloque, usado por el formulario de la página de inicio.
-app.get('/api/cotizar', (req, res) => {
+app.get('/api/cotizar', conBase(async (req, res) => {
   const hora = Number(req.query.hora);
   const fecha = req.query.fecha;
   const telefono = req.query.telefono;
@@ -446,13 +445,29 @@ app.get('/api/cotizar', (req, res) => {
 
   // Con el teléfono completo se cotiza lo mismo que se va a cobrar, y se explica por qué.
   // Antes esta cotización miraba solo el horario: mostraba ₡15.000 y se cobraba ₡13.500 (H-08).
-  const { precio, aplicaDescuento } = precioDeLaReserva({ hora, fecha, telefono });
+  const { precio, aplicaDescuento } = await precioDeLaReserva({ hora, fecha, telefono });
   const explicacion = aplicaDescuento ? ' (con 10% de descuento por cliente frecuente)' : '';
 
   res.json({ precio, precioFormateado: formatColones(precio) + explicacion });
-});
+}));
 
+// Arrancar por cuenta propia, o dejarse usar por quien nos llame.
+//
+// En la computadora, `npm start` corre este archivo directo: ahí sí hay que quedarse escuchando en
+// el puerto 3000, igual que siempre. Las 48 pruebas hacen lo mismo, lanzan `node server.js`, así
+// que para ellas nada cambia.
+//
+// En Vercel no hay ningún servidor prendido: por cada visita se despierta una función, se corre y
+// se apaga. Esa función no quiere que nos pongamos a escuchar un puerto, quiere que le entreguemos
+// la aplicación para llamarla ella. Por eso el `listen` queda dentro de la pregunta «¿me
+// ejecutaron a mí directamente?» (`require.main === module`) y la aplicación se exporta al final:
+// `api/index.js` la toma de ahí.
 const PUERTO = 3000;
-app.listen(PUERTO, () => {
-  console.log(`Cancha Total F5 escuchando en el puerto ${PUERTO}`);
-});
+
+if (require.main === module) {
+  app.listen(PUERTO, () => {
+    console.log(`Cancha Total F5 escuchando en el puerto ${PUERTO}`);
+  });
+}
+
+module.exports = app;

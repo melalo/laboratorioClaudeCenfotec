@@ -32,26 +32,26 @@ test(
     // marcha atrás y se cobra completo. Falla si la regla vuelve a comparar solo días en lugar de
     // medir cuánto falta: así estaba el sistema entregado, y cancelaba igual porque el partido
     // era "de mañana". Fue el hallazgo H-10.
-    const numero = s.sembrarReserva({
+    const numero = await s.sembrarReserva({
       cancha: 1, fecha: '2026-08-26', hora: 8, cliente: 'Cancela a las once de la noche',
       telefono: '88112233', precio: 15000,
     });
 
     await s.cancelar(numero);
-    assert.equal(s.leerReserva(numero).estado, 'activa');
+    assert.equal((await s.leerReserva(numero)).estado, 'activa');
   }
 );
 
 test('P-44 · con 33 horas de aviso se puede cancelar', async () => {
   // El caso holgado, que ya funcionaba: el partido es pasado mañana a las 8:00. Está para que el
   // arreglo de la regla no se pase de estricto y cierre cancelaciones legítimas.
-  const numero = s.sembrarReserva({
+  const numero = await s.sembrarReserva({
     cancha: 1, fecha: '2026-08-27', hora: 8, cliente: 'Avisa con tiempo',
     telefono: '88112233', precio: 15000,
   });
 
   await s.cancelar(numero);
-  assert.equal(s.leerReserva(numero).estado, 'cancelada');
+  assert.equal((await s.leerReserva(numero)).estado, 'cancelada');
 });
 
 test(
@@ -60,7 +60,7 @@ test(
     // E-23: el mensaje tiene que decir el motivo verdadero. Falla si este caso deja de
     // rechazarse —entonces el mensaje del plazo no aparece nunca cuando corresponde, que era lo
     // que pasaba con el sistema entregado— o si el mensaje deja de nombrar el plazo.
-    const numero = s.sembrarReserva({
+    const numero = await s.sembrarReserva({
       cancha: 2, fecha: '2026-08-26', hora: 9, cliente: 'Quiere saber por qué',
       telefono: '88112233', precio: 15000,
     });

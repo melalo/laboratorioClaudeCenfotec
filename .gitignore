@@ -3,3 +3,13 @@
 
 # Material de FretPath: ya no se necesita para el curso.
 fretPath-estudiantes/
+
+# Consignas del curso y material de apoyo local: se entregan por otra vía y no se suben.
+*.docx
+semana2/docs-referencia/
+
+# Archivos de bloqueo que deja LibreOffice al abrir un documento.
+.~lock.*#
+
+# Trabajo local de la version con MongoDB: se queda en el disco, no se sube.
+semana6-mongoDB/

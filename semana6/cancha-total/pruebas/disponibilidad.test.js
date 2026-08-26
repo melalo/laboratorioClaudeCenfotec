@@ -56,7 +56,7 @@ test('P-27 · un bloque ya vendido no se vuelve a vender', async () => {
 
   await s.reservar({ cancha: 1, fecha, hora: 12, cliente: 'Llegó después', telefono: '87654321' });
 
-  const enEseBloque = s.reservasDelDia(fecha).filter((r) => r.cancha === 1 && r.hora === 12);
+  const enEseBloque = (await s.reservasDelDia(fecha)).filter((r) => r.cancha === 1 && r.hora === 12);
   assert.equal(enEseBloque.length, 1, 'tenía que quedar una sola reserva en ese bloque');
   assert.equal(enEseBloque[0].cliente, 'Llegó primero');
 });

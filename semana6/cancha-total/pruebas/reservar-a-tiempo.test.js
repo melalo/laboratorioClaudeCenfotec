@@ -31,7 +31,7 @@ test(
     await s.reservar({
       cancha: 1, fecha: HOY, hora: 10, cliente: 'Llega cuatro horas tarde', telefono: '88112233',
     });
-    assert.equal(s.buscarReserva({ cancha: 1, fecha: HOY, hora: 10 }), undefined);
+    assert.equal(await s.buscarReserva({ cancha: 1, fecha: HOY, hora: 10 }), undefined);
   }
 );
 
@@ -44,7 +44,7 @@ test(
     await s.reservar({
       cancha: 1, fecha: HOY, hora: 14, cliente: 'Llega justo tarde', telefono: '88112233',
     });
-    assert.equal(s.buscarReserva({ cancha: 1, fecha: HOY, hora: 14 }), undefined);
+    assert.equal(await s.buscarReserva({ cancha: 1, fecha: HOY, hora: 14 }), undefined);
   }
 );
 

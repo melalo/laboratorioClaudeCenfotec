@@ -5,28 +5,33 @@
 //
 // Por qué hace falta tanto andamio, y no es capricho de las pruebas:
 //
-//   - `server.js` no exporta nada y arranca a escuchar en cuanto se carga, así que ninguna
-//     regla se puede probar por separado: hay que levantar la aplicación completa. (H-11)
-//   - la base de datos está en una ruta fija, así que la suite tiene que apartar la base real
-//     y devolverla al terminar. (H-12)
+//   - `server.js` arranca la aplicación completa; ninguna regla se puede probar por separado, así
+//     que hay que levantarla entera y hablarle por HTTP. (H-11)
 //   - el puerto 3000 está fijo en el código, así que la verificación no puede correr con otra
 //     aplicación levantada en ese puerto. (H-13)
 //
-// Los tres son hallazgos de estructura anotados en HALLAZGOS.md. Este archivo los rodea; no los
+// Los dos son hallazgos de estructura anotados en HALLAZGOS.md. Este archivo los rodea; no los
 // arregla, porque el código de producción no se toca.
+//
+// La base de datos, en cambio, dejó de ser un problema, y vale la pena decir por qué. Antes la
+// suite tenía que **apartar la base real** (`reservas.db`) antes de correr y **devolverla** al
+// terminar, con el riesgo de perderla si una corrida se cortaba a la mitad: ese era el hallazgo
+// H-12. Ahora cada corrida se hace **su propia base, en un archivo temporal del sistema**, que nace
+// vacía y se borra al terminar. La base de verdad no se toca en ningún momento, así que ya no hay
+// nada que apartar ni nada que perder.
 
 const { spawn } = require('node:child_process');
 const { once } = require('node:events');
-const fs = require('node:fs');
 const path = require('node:path');
-const Database = require('better-sqlite3');
+const fs = require('node:fs');
+const os = require('node:os');
 
 const RAIZ = path.join(__dirname, '..');
-const RUTA_BASE = path.join(RAIZ, 'reservas.db');
-const RUTA_RESPALDO = path.join(RAIZ, 'reservas.db.respaldo-de-pruebas');
 const DIRECCION = 'http://127.0.0.1:3000';
 
 let proceso = null;
+let archivoDePrueba = null;
+let baseDeDatos = null;
 
 function esperar(milisegundos) {
   return new Promise((seguir) => setTimeout(seguir, milisegundos));
@@ -34,34 +39,55 @@ function esperar(milisegundos) {
 
 // -- La base de datos ------------------------------------------------------------------------
 
-function apartarLaBaseReal() {
-  // Si quedó un respaldo de una corrida que se cortó a la mitad, la base real es el respaldo:
-  // se devuelve a su lugar antes de seguir, para no perderla nunca.
-  if (fs.existsSync(RUTA_RESPALDO)) {
-    if (fs.existsSync(RUTA_BASE)) fs.rmSync(RUTA_BASE, { force: true });
-    fs.renameSync(RUTA_RESPALDO, RUTA_BASE);
+// Estrena una base vacía en un archivo temporal y hace que TODOS le hablen a ella: tanto la
+// aplicación que se lanza en otro proceso —a la que se le pasa la dirección por el entorno— como
+// este mismo archivo, que necesita sembrar y leer reservas para comprobar los efectos.
+//
+// Que los dos apunten a la misma base es lo que hace que una prueba pueda sembrar una reserva y
+// después preguntarle a la aplicación qué hizo con ella.
+//
+// `TURSO_DATABASE_URL` es la misma variable que usa el despliegue para apuntar a la nube; acá se le
+// pasa una dirección de archivo (`file:...`). La aplicación no distingue una de otra, que es
+// justamente la gracia: se prueba el mismo código que se despliega.
+let corrida = 0;
+async function levantarLaBaseTemporal() {
+  corrida += 1;
+  archivoDePrueba = path.join(os.tmpdir(), `cancha-total-pruebas-${process.pid}-${corrida}.db`);
+  borrarElArchivoDePrueba();
+  process.env.TURSO_DATABASE_URL = 'file:' + archivoDePrueba.replace(/\\/g, '/');
+  // Se carga después de fijar el entorno, para que se conecte a esta base y no a la de verdad.
+  baseDeDatos = require('../basededatos');
+  return process.env.TURSO_DATABASE_URL;
+}
+
+// SQLite deja al lado del archivo otros dos de trabajo (`-wal` y `-shm`); si quedaran, la próxima
+// corrida arrancaría con basura de la anterior.
+function borrarElArchivoDePrueba() {
+  if (!archivoDePrueba) return;
+  for (const sufijo of ['', '-wal', '-shm']) {
+    try {
+      fs.rmSync(archivoDePrueba + sufijo, { force: true });
+    } catch {
+      // En Windows el archivo puede quedar tomado un instante más; no es motivo para fallar.
+    }
   }
-  if (fs.existsSync(RUTA_BASE)) fs.renameSync(RUTA_BASE, RUTA_RESPALDO);
 }
 
-function devolverLaBaseReal() {
-  // Si no hay respaldo, esta corrida nunca apartó nada —por ejemplo porque abortó por el puerto
-  // ocupado—, así que acá no hay nada que devolver y **no se borra nada**. Sin este candado, la
-  // limpieza borraría la base real de la administradora al salir por la puerta de emergencia.
-  if (!fs.existsSync(RUTA_RESPALDO)) return;
-  if (fs.existsSync(RUTA_BASE)) fs.rmSync(RUTA_BASE, { force: true });
-  fs.renameSync(RUTA_RESPALDO, RUTA_BASE);
-}
-
-function abrirLaBase(soloLectura) {
-  return new Database(RUTA_BASE, { readonly: Boolean(soloLectura) });
+async function bajarLaBaseTemporal() {
+  if (baseDeDatos) {
+    await baseDeDatos.cerrar();
+    baseDeDatos = null;
+  }
+  delete process.env.TURSO_DATABASE_URL;
+  borrarElArchivoDePrueba();
+  archivoDePrueba = null;
 }
 
 // -- Levantar y bajar la aplicación ----------------------------------------------------------
 
 // ¿Hay alguien más escuchando en el puerto 3000? Si lo hay, la suite no puede correr: el puerto
 // está fijo en el código (H-13) y las pruebas terminarían hablándole a otra aplicación y dando
-// resultados inventados. Se comprueba ANTES de tocar la base, para no mover nada si hay que abortar.
+// resultados inventados. Se comprueba ANTES de levantar nada, para no dejar cosas a medio armar.
 async function elPuertoEstaLibre() {
   try {
     const respuesta = await fetch(DIRECCION + '/', { signal: AbortSignal.timeout(2000) });
@@ -80,17 +106,23 @@ async function arrancar(entornoExtra) {
         'correr la verificación.'
     );
   }
-  apartarLaBaseReal();
+
+  const direccionDeLaBase = await levantarLaBaseTemporal();
+
   proceso = spawn(process.execPath, [path.join(RAIZ, 'server.js')], {
     cwd: RAIZ,
     stdio: 'ignore',
-    env: { ...process.env, ...entornoExtra },
+    env: {
+      ...process.env,
+      TURSO_DATABASE_URL: direccionDeLaBase,
+      ...entornoExtra,
+    },
   });
 
-  const limite = Date.now() + 15000;
+  const limite = Date.now() + 30000;
   while (Date.now() < limite) {
     if (proceso.exitCode !== null) {
-      devolverLaBaseReal();
+      await bajarLaBaseTemporal();
       throw new Error(
         'La aplicación se cerró al arrancar. Lo más probable: el puerto 3000 está ocupado (H-13).'
       );
@@ -111,7 +143,7 @@ async function arrancar(entornoExtra) {
     await esperar(120);
   }
   await bajarLaAplicacion();
-  throw new Error('La aplicación no respondió en 15 segundos.');
+  throw new Error('La aplicación no respondió en 30 segundos.');
 }
 
 // Arranca la aplicación con el reloj del sistema, que es lo normal.
@@ -136,9 +168,7 @@ async function bajarLaAplicacion() {
     await once(proceso, 'exit');
   }
   proceso = null;
-  // Windows suelta el archivo de la base un instante después de que el proceso muere.
-  await esperar(200);
-  devolverLaBaseReal();
+  await bajarLaBaseTemporal();
 }
 
 // -- Hablarle a la aplicación como una persona -----------------------------------------------
@@ -181,50 +211,34 @@ async function cotizar(consulta) {
 // Se usa solo cuando la prueba necesita que exista una reserva que el formulario no dejaría
 // crear —por ejemplo una de hoy, para probar la regla de cancelación—. Los datos los sigue
 // creando la prueba; lo único que se saltea es la puerta de entrada.
-function sembrarReserva({ cancha, fecha, hora, cliente, telefono, precio, estado }) {
-  const base = abrirLaBase(false);
-  const resultado = base
-    .prepare(
-      `INSERT INTO reservas (cancha, fecha, hora, cliente, telefono, precio, estado)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`
-    )
-    .run(cancha, fecha, hora, cliente, telefono, precio, estado || 'activa');
-  base.close();
-  return Number(resultado.lastInsertRowid);
+async function sembrarReserva({ cancha, fecha, hora, cliente, telefono, precio, estado }) {
+  return baseDeDatos.insertarReserva({
+    cancha,
+    fecha,
+    hora,
+    cliente,
+    telefono,
+    precio,
+    estado: estado || 'activa',
+  });
 }
 
 // -- Leer el efecto observable ---------------------------------------------------------------
 
-function buscarReserva({ cancha, fecha, hora }) {
-  const base = abrirLaBase(true);
-  const fila = base
-    .prepare('SELECT * FROM reservas WHERE cancha = ? AND fecha = ? AND hora = ?')
-    .get(cancha, fecha, hora);
-  base.close();
-  return fila;
+async function buscarReserva({ cancha, fecha, hora }) {
+  return baseDeDatos.buscarEnElBloque({ cancha, fecha, hora });
 }
 
-function leerReserva(id) {
-  const base = abrirLaBase(true);
-  const fila = base.prepare('SELECT * FROM reservas WHERE id = ?').get(id);
-  base.close();
-  return fila;
+async function leerReserva(id) {
+  return baseDeDatos.buscarPorNumero(id);
 }
 
-function contarReservas() {
-  const base = abrirLaBase(true);
-  const fila = base.prepare('SELECT COUNT(*) AS total FROM reservas').get();
-  base.close();
-  return fila.total;
+async function contarReservas() {
+  return baseDeDatos.contarTodas();
 }
 
-function reservasDelDia(fecha) {
-  const base = abrirLaBase(true);
-  const filas = base
-    .prepare('SELECT * FROM reservas WHERE fecha = ? ORDER BY cancha, hora')
-    .all(fecha);
-  base.close();
-  return filas;
+async function reservasDelDia(fecha) {
+  return baseDeDatos.reservasDelDia(fecha);
 }
 
 // -- Leer la pantalla ------------------------------------------------------------------------

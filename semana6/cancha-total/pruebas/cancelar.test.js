@@ -29,7 +29,7 @@ test('P-30 · una reserva de dentro de tres días se puede cancelar', async () =
   const numero = s.numeroDeLaReserva(confirmacion);
 
   await s.cancelar(numero);
-  assert.equal(s.leerReserva(numero).estado, 'cancelada');
+  assert.equal((await s.leerReserva(numero)).estado, 'cancelada');
 });
 
 test('P-31 · una reserva de hoy no se puede cancelar', async () => {
@@ -37,19 +37,19 @@ test('P-31 · una reserva de hoy no se puede cancelar', async () => {
   // que se cobra completo. La reserva se siembra directo en la base porque el formulario no
   // dejaría crearla una vez que E-19 esté implementada. Falla si la regla de las 24 horas se
   // afloja y deja cancelar el mismo día.
-  const numero = s.sembrarReserva({
+  const numero = await s.sembrarReserva({
     cancha: 1, fecha: s.hoy(), hora: 21, cliente: 'Cancela tarde', telefono: '88112233',
     precio: 20000,
   });
 
   await s.cancelar(numero);
-  assert.equal(s.leerReserva(numero).estado, 'activa');
+  assert.equal((await s.leerReserva(numero)).estado, 'activa');
 });
 
 test('P-32 · al rechazar una cancelación, la pantalla dice el motivo', async () => {
   // Falla si el mensaje deja de nombrar el plazo, y la administradora se queda sin poder
   // explicarle al cliente por qué se le cobra.
-  const numero = s.sembrarReserva({
+  const numero = await s.sembrarReserva({
     cancha: 2, fecha: s.hoy(), hora: 20, cliente: 'Quiere saber por qué', telefono: '88112233',
     precio: 20000,
   });
@@ -68,18 +68,18 @@ test('P-33 · una reserva ya cancelada no se vuelve a cancelar', async () => {
   const numero = s.numeroDeLaReserva(confirmacion);
 
   await s.cancelar(numero);
-  const comoQuedo = s.leerReserva(numero);
+  const comoQuedo = await s.leerReserva(numero);
 
   const respuesta = await s.cancelar(numero);
   assert.match(respuesta, /ya estaba cancelada/i);
-  assert.deepEqual(s.leerReserva(numero), comoQuedo, 'la segunda cancelación no tenía que cambiar nada');
+  assert.deepEqual(await s.leerReserva(numero), comoQuedo, 'la segunda cancelación no tenía que cambiar nada');
 });
 
 test('P-34 · cancelar una reserva que no existe no cambia nada', async () => {
   // Falla si un número inventado borra, cancela o crea algo.
-  const antes = s.contarReservas();
+  const antes = await s.contarReservas();
 
   const respuesta = await s.cancelar(999999);
   assert.match(respuesta, /no existe/i);
-  assert.equal(s.contarReservas(), antes);
+  assert.equal(await s.contarReservas(), antes);
 });

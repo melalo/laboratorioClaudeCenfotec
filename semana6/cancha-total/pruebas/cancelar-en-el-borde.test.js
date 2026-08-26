@@ -26,13 +26,13 @@ test('P-42 · con exactamente 24 horas de aviso, todavía se puede cancelar', as
   // El plazo es "hasta 24 horas antes", y se decidió a favor del cliente: si faltan 24 horas
   // justas, todavía alcanza. Falla si el borde se vuelve estricto y le come el derecho a quien
   // avisó justo en el límite.
-  const numero = s.sembrarReserva({
+  const numero = await s.sembrarReserva({
     cancha: 1, fecha: '2026-08-26', hora: 20, cliente: 'Justo en el borde',
     telefono: '88112233', precio: 20000,
   });
 
   await s.cancelar(numero);
-  assert.equal(s.leerReserva(numero).estado, 'cancelada');
+  assert.equal((await s.leerReserva(numero)).estado, 'cancelada');
 });
 
 test(
@@ -41,12 +41,12 @@ test(
     // El otro lado del mismo borde. Falla si la regla vuelve a comparar solo días: el sistema
     // entregado lo cancelaba porque el partido era "de mañana", sin fijarse en que faltan 23
     // horas.
-    const numero = s.sembrarReserva({
+    const numero = await s.sembrarReserva({
       cancha: 2, fecha: '2026-08-26', hora: 19, cliente: 'Una hora tarde',
       telefono: '88112233', precio: 20000,
     });
 
     await s.cancelar(numero);
-    assert.equal(s.leerReserva(numero).estado, 'activa');
+    assert.equal((await s.leerReserva(numero)).estado, 'activa');
   }
 );
