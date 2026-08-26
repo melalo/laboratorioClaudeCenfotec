@@ -10,3 +10,6 @@ semana2/docs-referencia/
 
 # Archivos de bloqueo que deja LibreOffice al abrir un documento.
 .~lock.*#
+
+# Trabajo local de la version con MongoDB: se queda en el disco, no se sube.
+semana6-mongoDB/

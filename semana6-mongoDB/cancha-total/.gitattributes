@@ -1,3 +1,0 @@
-# Los guiones de shell tienen que quedar con finales de linea de Unix: con finales de
-# Windows, bash no encuentra el interprete y verificar.sh no arranca.
-*.sh text eol=lf
