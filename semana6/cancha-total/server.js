@@ -189,16 +189,38 @@ ${contenido}
 app.get('/', conBase(async (req, res) => {
   const fecha = req.query.fecha || hoyISO();
 
+  // Toda la disponibilidad del día, en UNA sola consulta.
+  //
+  // Antes esta página preguntaba «¿está libre la cancha 1 a las 8?» bloque por bloque: 2 canchas
+  // × 14 horas = 28 viajes a la base para dibujar una sola tabla. Contra el archivo local eso no
+  // se notaba, porque el archivo estaba al lado; contra Turso cada pregunta es un viaje por
+  // internet, y desplegado en Vercel la visita se caía a mitad de camino con «TypeError: fetch
+  // failed»: una función no aguanta 28 llamadas seguidas dentro de la misma visita.
+  //
+  // Comprobado el 2026-08-26 contra el despliegue: las rutas de una sola cancha (14 consultas)
+  // contestaban bien, 5 visitas seguidas a una de ellas -70 consultas en total- tambien, y esta,
+  // con 28 en una sola visita, fallaba siempre. El límite es por visita, no acumulado.
+  //
+  // Ahora se piden las reservas del día de una vez y la disponibilidad se calcula acá. Un viaje
+  // en vez de 28, y el mismo resultado: `checkDisponible` daba libre cuando no había ninguna
+  // reserva **activa** en el bloque, así que las canceladas se descartan igual que antes.
+  const reservasDelDia = await getReservasDelDia(fecha);
+  const ocupados = new Set(
+    reservasDelDia
+      .filter((r) => r.estado === 'activa')
+      .map((r) => r.cancha + '-' + r.hora)
+  );
+
   let filasCancha1 = '';
   let filasCancha2 = '';
   for (let hora = 8; hora <= 21; hora++) {
     // Tarifa del bloque para pintar la disponibilidad.
     const precio = tarifaDelBloque(hora);
 
-    const libre1 = await checkDisponible(1, fecha, hora);
+    const libre1 = !ocupados.has('1-' + hora);
     filasCancha1 += `<tr><td>${hora}:00</td><td class="${libre1 ? 'libre' : 'ocupado'}">${libre1 ? 'Libre' : 'Ocupado'}</td><td>${formatColones(precio)}</td></tr>`;
 
-    const libre2 = await checkDisponible(2, fecha, hora);
+    const libre2 = !ocupados.has('2-' + hora);
     filasCancha2 += `<tr><td>${hora}:00</td><td class="${libre2 ? 'libre' : 'ocupado'}">${libre2 ? 'Libre' : 'Ocupado'}</td><td>${formatColones(precio)}</td></tr>`;
   }
 
