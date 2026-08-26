@@ -1,0 +1,79 @@
+# Integración continua de `semana6/cancha-total`: la suite corre sola en cada push y en cada
+# pull request.
+#
+# ── Por qué este archivo está en la raíz y no dentro de `semana6/` ────────────────────────────
+#
+# El `CLAUDE.md` de la raíz dice que todo el trabajo de una sesión queda adentro de la carpeta del
+# día. Este archivo no puede cumplirlo, por una razón técnica y no por comodidad: **GitHub solo
+# ejecuta los archivos que están en `.github/workflows/` en la raíz del repositorio.** Adentro de
+# `semana6/` los ignora, y entonces no correría nunca.
+#
+# Es la misma excepción que ya tenía `pruebas.yml` (el de `proyectoFinal/`), documentada ahí el
+# 2026-08-19. Autorizada por la estudiante el 2026-08-25 al pedir este workflow.
+#
+# ── Qué protege ──────────────────────────────────────────────────────────────────────────────
+#
+# La suite de 48 pruebas que reconstruye y comprueba la especificación de Cancha Total F5. De
+# esas, 42 están en verde y 6 quedan marcadas como **fallo esperado** con su número de hallazgo:
+# esas no rompen la puerta a propósito, están anotadas en `HALLAZGOS.md` y se cierran cuando se
+# arreglen. Por eso `npm test` termina en 0 aunque haya hallazgos abiertos.
+#
+# Verificado en la máquina de la estudiante el 2026-08-25 con Node v24.16.0: 48 pruebas, 42 en
+# verde, 0 fallos, código de salida 0.
+
+name: Pruebas semana6
+
+# En cada push a cualquier rama, y en cada pull request.
+on:
+  push:
+  pull_request:
+
+jobs:
+  pruebas:
+    runs-on: ubuntu-latest
+
+    # ── Dos versiones de Node ─────────────────────────────────────────────────────────────────
+    #
+    # Misma convención que `pruebas.yml`. `fail-fast: false` hace que, si una versión falla, la
+    # otra igual termine de correr: así se ve si el problema es de una versión concreta o de las
+    # dos. La dependencia delicada es `better-sqlite3` (fijada en 11.10.0), que es código nativo y
+    # necesita una versión compatible con el Node que la corre.
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [20, 24]
+
+    # La aplicación no vive en la raíz del repositorio, así que todos los comandos se corren
+    # adentro de su carpeta.
+    defaults:
+      run:
+        working-directory: semana6/cancha-total
+
+    steps:
+      # Trae una copia del repositorio a la máquina donde va a correr todo.
+      - name: Traer el repositorio
+        uses: actions/checkout@v4
+
+      - name: Instalar Node.js ${{ matrix.node }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          # Guarda las dependencias descargadas para que la próxima vez tarde menos.
+          cache: npm
+          cache-dependency-path: semana6/cancha-total/package-lock.json
+
+      # `npm ci` instala **exactamente** las versiones que dice `package-lock.json`, sin actualizar
+      # nada por su cuenta.
+      #
+      # OJO, riesgo conocido y anotado el 2026-08-25: este `package-lock.json` tiene sus 104
+      # paquetes apuntando a un espejo de Microsoft (`ms-feed-*.pkgs.visualstudio.com`) en vez del
+      # registro público de npm, porque así estaba configurado npm en la máquina donde se
+      # instalaron. Si este paso falla bajando paquetes, la causa es esa y se arregla regenerando
+      # el `package-lock.json` contra `registry.npmjs.org`.
+      - name: Instalar las dependencias
+        run: npm ci
+
+      # `npm test` corre `node --test pruebas/*.test.js`, el probador que ya trae Node. No hace
+      # falta instalar ninguna herramienta de pruebas aparte.
+      - name: Correr las pruebas
+        run: npm test
