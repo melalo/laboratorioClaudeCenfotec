@@ -9,7 +9,10 @@
     "test": "node --test --test-concurrency=1 pruebas/*.test.js"
   },
   "dependencies": {
-    "@libsql/client": "^0.17.4",
-    "express": "^4.19.2"
+    "express": "^4.19.2",
+    "mongodb": "^7.6.0"
+  },
+  "devDependencies": {
+    "mongodb-memory-server": "^11.2.0"
   }
 }

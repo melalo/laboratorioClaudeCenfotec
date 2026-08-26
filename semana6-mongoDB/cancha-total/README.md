@@ -39,11 +39,6 @@ No hay dos versiones del código: es la misma aplicación con dos destinos posib
 despliegue la base remota no es opcional, porque el disco de un servidor sin estado se borra entre
 una visita y la siguiente y las reservas se perderían.
 
-**Todas las consultas viven en un solo archivo, [`basededatos.js`](basededatos.js).** Antes el SQL
-estaba escrito tres veces —en `server.js`, en `datos.js` y en el andamio de las pruebas—; ahora
-quien necesita un dato le pide a ese archivo «contame las reservas activas de este bloque» y no
-necesita saber cómo se le pregunta a la base.
-
 **Las dos variables son credenciales: no se escriben en el código ni se suben al repositorio.**
 
 ## Verificar
@@ -68,9 +63,9 @@ que corre la misma suite y también termina en 0 o distinto de 0. La diferencia 
 es el comando único de la puerta —el que llama el hook— y `npm test` corre solo las pruebas.
 
 **El puerto 3000 tiene que estar libre.** Está fijo en `server.js`, así que la verificación no
-puede correr con otra aplicación levantada ahí; si eso pasa, la suite aborta diciéndolo. **Tus
-datos no se tocan:** cada corrida se hace su propia base vacía en un archivo temporal del sistema y
-la borra al terminar, así que `reservas.db` no se abre siquiera.
+puede correr con otra aplicación levantada ahí; si eso pasa, la suite aborta diciéndolo. Y la suite
+aparta la base de datos real mientras corre, y la devuelve a su lugar al terminar: los datos no se
+tocan.
 
 Algunas pruebas aparecen con `⚠` y un número `H-NN`: son **fallos esperados**, defectos ya
 conocidos que están anotados y todavía no corregidos. No rompen la verificación a propósito, para
