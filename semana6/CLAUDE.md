@@ -204,15 +204,43 @@ sigue tratándose como comportamiento correcto hasta que la estudiante diga lo c
 
 ## A qué rama se sube el trabajo de esta carpeta
 
-**Todo lo que se suba a Git desde esta carpeta va a la rama `prueba_clase_6`, y solo a los
-archivos que están dentro de `semana6/`.** El repositorio es
-`https://github.com/melalo/laboratorioClaudeCenfotec.git` (remoto `origin`).
+**Decisión del 2026-08-26.** El repositorio es
+`https://github.com/melalo/laboratorioClaudeCenfotec.git` (remoto `origin`), y el flujo de la
+semana 6 tiene dos pasos, en este orden y nunca al revés:
 
-- **No se sube a `main`.** `main` guarda las semanas ya cerradas; el trabajo de esta carpeta no
-  entra ahí.
-- **No se sube a `proyectoFinal`.** Esa rama es para el proyecto final, que es otra entrega.
+1. **Trabajo y subo a `prueba_clase_6`.** Todo commit de esta carpeta va ahí, directo, con
+   `git push origin prueba_clase_6`. Esa rama no tiene reglas de protección: acepta push directo.
+2. **Después yo pido el PR de `prueba_clase_6` a `main`.** Nunca antes, y nunca por iniciativa
+   propia: el PR se abre solo cuando yo lo pido explícitamente.
+
+Y lo que va en cada commit son únicamente archivos bajo `semana6/`. Si `git status` muestra
+cambios fuera de esta carpeta, se nombran en la respuesta y se dejan sin agregar.
+
+### Las reglas de GitHub que sostienen este flujo
+
+El ruleset **"reglas de clase"** (id `21514762`) apunta al objetivo **"Default"**, que es `main`.
+Hasta el 2026-08-26 apuntaba a `prueba_clase_6` —un error de configuración: protegía el banco de
+pruebas y dejaba `main` abierta— y ella lo corrigió a mano ese día. Verificado con
+`gh api repos/melalo/laboratorioClaudeCenfotec/rules/branches/<rama>`:
+
+| Rama | Reglas activas | Cómo entra un cambio |
+|---|---|---|
+| `prueba_clase_6` | ninguna | `git push origin prueba_clase_6`, directo |
+| `main` | `deletion`, `non_fast_forward`, `pull_request` | **solo por PR** desde `prueba_clase_6` |
+| `proyectoFinal` | ninguna | directo, pero no se toca desde acá |
+
+O sea: a `main` no se puede empujar directo ni aunque se quisiera, GitHub lo rechaza. El PR es el
+único camino, y ese PR sale de `prueba_clase_6`.
+
+### Lo que no se hace
+
+- **No se crean ramas nuevas.** Ni "puente", ni de trabajo, ni temporales. El 2026-08-26 se creó
+  `regla-rama-semana6` con el PR #7 para saltar la protección y ella pidió deshacerlo: el PR se
+  cerró y la rama se borró. `prueba_clase_6` es el único lugar de trabajo.
+- **No se toca `proyectoFinal`.** Es otra entrega, con su propia rama.
 - **No se toca ninguna otra rama** (`respaldo-antes-de-renombrar`, `respaldo-antes-de-semana5`,
-  `quitar-mongodb`, `subir-trabajo-semana6` ni cualquiera que aparezca después).
+  ni cualquiera que aparezca después).
+- **No se abre el PR a `main` sin que yo lo pida.**
 
 Antes de cada commit se comprueba en qué rama estamos:
 
@@ -220,17 +248,7 @@ Antes de cada commit se comprueba en qué rama estamos:
 git rev-parse --abbrev-ref HEAD     # tiene que contestar: prueba_clase_6
 ```
 
-Si contesta otra cosa, **no se hace el commit**: primero se avisa y se pregunta. Nunca se cambia
-de rama ni se crea una rama nueva por cuenta propia.
-
-Cuando pido subir algo, el destino completo es siempre el mismo:
-
-```
-git push origin prueba_clase_6
-```
-
-Y lo que va en ese commit son únicamente archivos bajo `semana6/`. Si `git status` muestra
-cambios fuera de esta carpeta, se nombran en la respuesta y se dejan sin agregar.
+Si contesta otra cosa, **no se hace el commit**: primero se avisa y se pregunta.
 
 ## Entregables al repositorio Git
 
