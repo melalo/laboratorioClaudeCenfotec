@@ -90,10 +90,12 @@ averiguarlo es el trabajo. Los valores van con su número exacto porque ahí viv
 Sistema de reservas de las dos canchas techadas de fútbol 5 de "Cancha Total F5": ver la
 disponibilidad del día, registrar reservas y cancelarlas.
 
-`cancha-total/` **tiene su propio repositorio Git anidado** (`.git` propio, un solo commit:
-`65ce4b4 "Sistema de reservas — versión entregada por el proveedor"`). El repositorio madre la ve
-como carpeta sin seguimiento. Ese commit es la foto de lo que entregó el proveedor: sirve como
-línea base para comparar cualquier cambio posterior.
+`cancha-total/` **ya no tiene repositorio Git propio.** Antes tenía un `.git` anidado con un solo
+commit (`65ce4b4 "Sistema de reservas — versión entregada por el proveedor"`), y el repositorio madre
+la veía como carpeta sin seguimiento. Hoy sus 25 archivos están rastreados directamente por el
+repositorio madre (verificado con `git ls-files semana6/cancha-total`), en la rama `prueba_clase_6`.
+Por eso el destino de cualquier commit de esta aplicación es el descrito en «A qué rama se sube el
+trabajo de esta carpeta», más abajo.
 
 ### Comandos
 
@@ -200,10 +202,40 @@ sigue tratándose como comportamiento correcto hasta que la estudiante diga lo c
 - El proveedor dejó código muerto marcado como tal: la función `esFeriado()` y el bloque comentado
   de precios de temporada alta.
 
+## A qué rama se sube el trabajo de esta carpeta
+
+**Todo lo que se suba a Git desde esta carpeta va a la rama `prueba_clase_6`, y solo a los
+archivos que están dentro de `semana6/`.** El repositorio es
+`https://github.com/melalo/laboratorioClaudeCenfotec.git` (remoto `origin`).
+
+- **No se sube a `main`.** `main` guarda las semanas ya cerradas; el trabajo de esta carpeta no
+  entra ahí.
+- **No se sube a `proyectoFinal`.** Esa rama es para el proyecto final, que es otra entrega.
+- **No se toca ninguna otra rama** (`respaldo-antes-de-renombrar`, `respaldo-antes-de-semana5`,
+  `quitar-mongodb`, `subir-trabajo-semana6` ni cualquiera que aparezca después).
+
+Antes de cada commit se comprueba en qué rama estamos:
+
+```
+git rev-parse --abbrev-ref HEAD     # tiene que contestar: prueba_clase_6
+```
+
+Si contesta otra cosa, **no se hace el commit**: primero se avisa y se pregunta. Nunca se cambia
+de rama ni se crea una rama nueva por cuenta propia.
+
+Cuando pido subir algo, el destino completo es siempre el mismo:
+
+```
+git push origin prueba_clase_6
+```
+
+Y lo que va en ese commit son únicamente archivos bajo `semana6/`. Si `git status` muestra
+cambios fuera de esta carpeta, se nombran en la respuesta y se dejan sin agregar.
+
 ## Entregables al repositorio Git
 
-Los seis que pide la consigna, todos dentro de `cancha-total/` (que tiene su propio repositorio
-Git anidado, encima del commit del proveedor):
+Los seis que pide la consigna, todos dentro de `cancha-total/`, rastreados por el repositorio madre
+en la rama `prueba_clase_6`:
 
 | Entregable | Qué es |
 |---|---|
