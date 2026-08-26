@@ -1,9 +1,14 @@
 # Curso Laboratorio Ejecutivo en Claude Code — CENFOTEC (SINT-732)
 
 Este repositorio es el trabajo de un **curso de aprendizaje**. Cada consigna vive en su propia
-carpeta (`semana1/`, `semana2/`, …) y el proyecto final en `proyectoFinal/`. Cada carpeta tiene su
-propio `CLAUDE.md` con lo específico de esa consigna; **este archivo tiene las reglas que aplican
-siempre, a todas las carpetas y a todas las sesiones**, incluidas las que todavía no existen.
+carpeta (`semana1/`, `semana2/`, …). Cada carpeta tiene su propio `CLAUDE.md` con lo específico de
+esa consigna; **este archivo tiene las reglas que aplican siempre, a todas las carpetas y a todas
+las sesiones**, incluidas las que todavía no existen.
+
+> **El proyecto final ya no vive acá.** Hasta el 2026-08-26 estuvo en la carpeta `proyectoFinal/`.
+> Desde entonces tiene su propio repositorio, con todo su historial:
+> **https://github.com/melalo/cenfotecProyectoFinalCC**. Las reglas de este archivo que le seguían
+> aplicando quedaron copiadas en el `CLAUDE.md` de ese repositorio.
 
 ## Quién trabaja acá
 
