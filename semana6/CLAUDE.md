@@ -11,7 +11,10 @@ específico de esta consigna.
 como copia byte a byte de `semana5/`. Esa versión quedó guardada en `CLAUDE.md.semana5.bak` por si
 hace falta consultarla. De acá para abajo, todo es la consigna nueva.
 
-## Qué se pide (consigna-semana6.txt)
+## Qué se pide
+
+La consigna está en `semana6/consigna-semana6.txt`, que vive solo en el disco: las consignas del
+curso no se suben al repositorio.
 
 Llevar el sistema de reservas desde una sola computadora hasta una dirección pública, **con una
 puerta que decida qué entra**. No se agregan funciones ni se cambia el comportamiento del negocio:
@@ -44,7 +47,7 @@ no en pantallas de configuración.
 | Qué | Dónde |
 |---|---|
 | El sistema | `semana6/cancha-total/` |
-| La consigna | `semana6/consigna-semana6.txt` |
+| La consigna | `semana6/consigna-semana6.txt` — **local, sin seguimiento en Git**, como el resto del material del curso |
 | La puerta local | `cancha-total/verificar.sh` (sale 0 = verde, 2 = rojo) |
 | La suite | `cancha-total/pruebas/*.test.js` — 48 pruebas, `npm test` |
 | Los hallazgos | `cancha-total/HALLAZGOS.md` — 6 marcados como fallo esperado |
