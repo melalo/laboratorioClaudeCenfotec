@@ -65,18 +65,23 @@ Lo de ayer (GitHub, Vercel y Turso) dejó esto andando:
 - **`basededatos.js`** ya sabe elegir destino: si hay `TURSO_DATABASE_URL` usa Turso; si está en
   Vercel sin ella, usa `/tmp` (modo vitrina, se borra); en la computadora, el archivo local.
 
-### Lo que falta, punto por punto
+### Avance de la sesión del 2026-08-27
 
-| Paso | Estado | Qué falta exactamente |
+| Paso | Estado | Evidencia |
 |---|---|---|
-| 1 · Repo público | ✅ | — |
-| 1 · Protección de `main` | ⚠️ **a medias** | Existe el ruleset «reglas de clase» (activo, exige PR, sin bypass, bloquea borrado y force-push) pero **no tiene `required_status_checks`**: hoy se puede fusionar un PR con la verificación en rojo. |
-| 2 · Puerta en el repo | ❌ **falta** | No hay `.github/workflows/` en este repositorio. La integración continua se sacó en el commit `5e06eaa` porque apuntaba a una carpeta que ya no existía. Hay que escribirla de nuevo, apuntando a `semana6/cancha-total/`. |
-| 2 · Qué bloquea y qué informa | ❌ **falta** | No está escrito en ningún lado. |
-| 3 · Puerta en rojo y después en verde | ❌ **falta** | Depende del paso 2. |
-| 4 · Falla del despliegue + log como entrada | ⚠️ **hecho a medias** | Hubo un 500 y se arregló ayer (commit `3e167c4`, base de vitrina en `/tmp`), pero **falta dejar registrado el log crudo que se le entregó al agente**, que es lo que la consigna pide como evidencia. |
-| 5 · Base gestionada | ⚠️ **por confirmar** | Las variables están cargadas, pero falta comprobar que **el despliegue en producción de verdad está hablando con Turso** (las variables se agregaron alrededor de la hora del último despliegue; si se agregaron después, ese despliegue no las tiene y hay que volver a desplegar). |
-| 5 · La suite sigue en verde | ⚠️ **por confirmar** | Correr `verificar.sh` hoy antes de tocar nada. |
+| 1 · Repo público | ✅ | `melalo/laboratorioClaudeCenfotec` |
+| 1 · `main` no recibe cambios directos | ✅ | Ruleset «reglas de clase»: exige Pull Request, bloquea borrado y force-push |
+| 1 · Un PR no se fusiona con la verificación en rojo | ✅ | Se le agregó la regla `required_status_checks` con la revisión `verificacion`. `bypass_actors` está vacío, así que **también aplica a la dueña del repositorio** (confirmado con `gh api .../rules/branches/main`) |
+| 2 · La puerta corre sola | ✅ | `.github/workflows/verificacion.yml`, en cada push y en cada PR. Primera corrida en verde: 48 pruebas, 42 pasan, 0 fallos, 6 esperados |
+| 2 · Sin credenciales | ✅ | El flujo no referencia ningún secreto. Sin `TURSO_DATABASE_URL`, la aplicación cae al archivo local |
+| 2 · Qué frena y qué informa | ✅ | Escrito en el `README.md` de `cancha-total/` y en la cabecera del propio flujo. Frena `verificacion`; `hallazgos-abiertos` lleva `continue-on-error: true` |
+| 3 · La puerta en rojo | ✅ | PR #13: la tarifa diurna subida a ₡16.000 dejó 12 pruebas en rojo. GitHub rechazó la fusión: «the base branch policy prohibits the merge». Estado `BLOCKED` |
+| 3 · Y de vuelta en verde | ✅ | Commit siguiente: la tarifa vuelve a ₡15.000. Estado `CLEAN`. Ningún valor esperado de las pruebas se tocó |
+| 4 · Falla del despliegue + log como entrada | ✅ | Reproducida a propósito: se desplegó a producción pisando las dos variables solo para ese despliegue. El despliegue quedó `Ready` y el sitio contestó **500** con `LibsqlError: SQLITE_CANTOPEN: unable to open database file`. El registro crudo, el diagnóstico y el arreglo están en `cancha-total/DESPLIEGUE.md` |
+| 5 · Base gestionada andando en producción | ✅ | Se quitó el modo vitrina de `/tmp`: sin base gestionada, el despliegue ahora falla de entrada diciendo qué falta. Comprobado contra el sitio en vivo: una reserva creada por la web quedó guardada en Turso y el sitio la leyó de vuelta. La reserva de prueba se borró |
+| 5 · La suite no cambió | ✅ | 48 pruebas, 42 pasan, 0 fallos, 6 esperados — antes y después. Ningún valor esperado se tocó |
+
+**PRs de la sesión:** #12 (la puerta, fusionado) y #13 (rojo y verde).
 
 ## Reglas de esta semana
 
@@ -111,9 +116,19 @@ Se resuelven al empezar la sesión y se anotan acá cuando se cierren:
    bloquea la fusión, y el commit siguiente devuelve el número a su lugar y todo vuelve a verde.
    Se eligió por ser el rojo más fácil de leer en la entrega.
 
-## Decisiones que siguen abiertas
+4. ~~**El modo vitrina de `/tmp`**~~ **Cerrada el 2026-08-27:** se saca. `/tmp` es privado de cada
+   copia de la función y se borra cuando Vercel la duerme, así que las reservas se perdían sin
+   avisar — y un sistema de reservas que pierde reservas en silencio es peor que uno que no
+   arranca. Ahora, desplegado y sin base gestionada, el programa falla de entrada diciendo qué
+   falta.
 
-- **El modo vitrina de `/tmp`:** ¿se deja como red de seguridad, o se saca para que el despliegue
-  falle ruidosamente si Turso no está configurada? Se decide al llegar al paso 5.
-- **Confirmar que producción habla con Turso:** la base ya tiene la tabla `reservas` creada y 0
-  filas. Falta una reserva de prueba contra el sitio en vivo para comprobar que se guarda ahí.
+## Cosas que conviene recordar
+
+- **El proyecto en Vercel tiene la carpeta raíz en `semana6/cancha-total`**, así que
+  `vercel deploy` se lanza desde la **raíz del repositorio**, no desde adentro de esa carpeta. Si
+  se lanza desde adentro, falla con «The specified Root Directory does not exist».
+- **Las vistas previas de Vercel están detrás del login**, así que una petición anónima nunca llega
+  a la función. Para ver una falla de verdad hay que reproducirla en producción.
+- **Para probar sin base gestionada sin borrar nada:** `vercel deploy --prod -e TURSO_DATABASE_URL=
+  -e TURSO_AUTH_TOKEN=` pisa las variables solo en ese despliegue. La configuración guardada queda
+  intacta.
