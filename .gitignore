@@ -6,6 +6,9 @@ fretPath-estudiantes/
 
 # Consignas del curso y material de apoyo local: se entregan por otra vía y no se suben.
 *.docx
+# Las consignas tambien llegan en texto plano. El patron `/*.txt` de arriba solo tapa la raiz,
+# asi que sin esta linea una consigna dentro de una carpeta de semana se sube igual.
+consigna*.txt
 semana2/docs-referencia/
 
 # Archivos de bloqueo que deja LibreOffice al abrir un documento.
