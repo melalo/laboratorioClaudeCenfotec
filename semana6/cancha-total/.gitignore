@@ -3,3 +3,4 @@ reservas.db
 reservas.db-wal
 reservas.db-shm
 .vercel
+.env*
