@@ -34,6 +34,7 @@ destinos con exactamente el mismo SQL:
 |---|---|---|
 | nada | el archivo `reservas.db` de esta carpeta | en la computadora: `npm start`, `npm run datos` y las pruebas. Sin internet |
 | `TURSO_DATABASE_URL` y `TURSO_AUTH_TOKEN` | la base alojada en **Turso** (SQLite en la nube) | en el despliegue |
+| nada, **y está desplegado** | ninguna: falla de entrada diciendo qué falta | nunca debería pasar. Ver [`DESPLIEGUE.md`](DESPLIEGUE.md) |
 
 No hay dos versiones del código: es la misma aplicación con dos destinos posibles. En el
 despliegue la base remota no es opcional, porque el disco de un servidor sin estado se borra entre
@@ -45,6 +46,9 @@ quien necesita un dato le pide a ese archivo «contame las reservas activas de e
 necesita saber cómo se le pregunta a la base.
 
 **Las dos variables son credenciales: no se escriben en el código ni se suben al repositorio.**
+
+Por qué el despliegue no puede usar un archivo del disco, con el registro de la falla que lo
+reveló: [`DESPLIEGUE.md`](DESPLIEGUE.md).
 
 ## Verificar
 
@@ -121,6 +125,7 @@ la variable quedó puesta.
 | Archivo | Qué contiene |
 |---|---|
 | [`ESPECIFICACION.md`](ESPECIFICACION.md) | Qué tiene que hacer el sistema, afirmación por afirmación y con la fuente de cada una. Es la fuente de verdad: de acá sale cada prueba |
+| [`DESPLIEGUE.md`](DESPLIEGUE.md) | Qué reveló publicar el sistema: el registro crudo del 500, el diagnóstico que salió de él, y por qué el almacenamiento es una base gestionada |
 | [`HALLAZGOS.md`](HALLAZGOS.md) | Lo que el sistema no cumple, separado en defectos de comportamiento y deudas de estructura |
 | `pruebas/` | El conjunto de pruebas. Cada archivo declara arriba qué condiciones cubre, a qué nivel y por qué |
 | `verificar.sh` | La puerta de calidad: un comando que contesta si se puede cerrar o no |

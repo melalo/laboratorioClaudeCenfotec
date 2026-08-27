@@ -18,14 +18,6 @@ const { createClient } = require('@libsql/client');
 // El archivo de la base cuando se trabaja en la computadora.
 const ARCHIVO_LOCAL = path.join(__dirname, 'reservas.db');
 
-// El archivo de la base cuando se despliega sin una base remota configurada.
-//
-// En Vercel el disco donde vive el programa es de **solo lectura**: intentar abrir
-// `ARCHIVO_LOCAL` falla en el acto y tumba el sitio entero con un 500. La única carpeta donde sí
-// se puede escribir es `/tmp`, un borrador que Vercel le presta a cada función mientras está
-// despierta.
-const ARCHIVO_TEMPORAL = '/tmp/reservas.db';
-
 let conexion = null;
 
 // A qué base hay que hablarle.
@@ -48,15 +40,21 @@ function direccionDeLaBase() {
       esLocal: process.env.TURSO_DATABASE_URL.startsWith('file:'),
     };
   }
-  // Desplegado y sin base remota: el borrador de `/tmp`.
+  // Desplegado y sin base remota: no hay dónde guardar, y hay que decirlo fuerte.
   //
-  // Esto NO reemplaza a Turso, es un modo de vitrina: sirve para que el sitio se vea y se pueda
-  // usar de verdad mientras todavía no hay base en la nube. Lo que se reserve acá dura lo que
-  // dure la función despierta —unos minutos sin visitas y Vercel la duerme, borrando el
-  // borrador—, así que las reservas se pierden. En cuanto se configure `TURSO_DATABASE_URL`, el
-  // `if` de arriba gana y esta rama deja de usarse sola, sin tocar nada.
+  // Durante un rato hubo acá una tercera rama que mandaba la base a `/tmp`, la única carpeta
+  // escribible de la función. Servía de vitrina —el sitio se veía— pero mentía: `/tmp` es privado
+  // de cada copia de la función y se borra cuando Vercel la duerme, así que las reservas se
+  // perdían sin avisar. Un sistema de reservas que pierde reservas en silencio es peor que uno
+  // que no arranca.
+  //
+  // Ahora falla de entrada y con el motivo escrito. En un despliegue la base gestionada no es
+  // opcional: es el almacenamiento, no un respaldo.
   if (process.env.VERCEL) {
-    return { url: 'file:' + ARCHIVO_TEMPORAL, esLocal: true };
+    throw new Error(
+      'Falta configurar TURSO_DATABASE_URL. En el despliegue el disco es de solo lectura, así ' +
+        'que no hay dónde guardar las reservas: la base tiene que ser la base gestionada.'
+    );
   }
 
   return { url: 'file:' + ARCHIVO_LOCAL.replace(/\\/g, '/'), esLocal: true };
