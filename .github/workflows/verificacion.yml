@@ -1,0 +1,92 @@
+# La puerta de Cancha Total F5, corriendo sola.
+#
+# Hasta ahora la verificación se corría a mano, en la computadora de quien trabajaba el sistema.
+# Este archivo la muda a una máquina limpia de GitHub: una computadora prestada que arranca vacía,
+# baja el código, corre las pruebas y se apaga. Nadie tiene que acordarse de nada.
+#
+# Corre sin credenciales de ningún servicio. Sin `TURSO_DATABASE_URL` configurada, la aplicación
+# usa el archivo `reservas.db` de su carpeta — que es justo lo que tiene que pasar acá.
+#
+# QUÉ IMPIDE LA FUSIÓN Y QUÉ ÚNICAMENTE INFORMA
+#
+#   - `verificacion` IMPIDE la fusión. Es `verificar.sh`: las 48 pruebas. Si queda en rojo, el
+#     Pull Request no se puede fusionar a `main`. Es la única revisión obligatoria.
+#   - `hallazgos-abiertos` ÚNICAMENTE INFORMA. Imprime los hallazgos que siguen sin cerrar. Se ve
+#     en el registro de la corrida, pero no frena nada: esos hallazgos están anotados a propósito
+#     y cerrarlos no es el trabajo de esta consigna. Lleva `continue-on-error: true`, que es la
+#     manera de decirle a GitHub «si esto falla, seguí igual».
+
+name: verificación
+
+# Cuándo corre: cada vez que se envía código a cualquier rama, y cada vez que se abre o se
+# actualiza un Pull Request. Sin filtros de rama ni de carpeta a propósito: un filtro mal puesto
+# hace que la puerta no corra y nadie se entere, que es peor que correrla de más.
+on:
+  push:
+  pull_request:
+
+# El permiso más chico que alcanza: leer el código. Nada más.
+permissions:
+  contents: read
+
+jobs:
+  # -- LA QUE IMPIDE LA FUSIÓN -----------------------------------------------------------------
+  verificacion:
+    # Este nombre es el que GitHub usa para identificar la revisión en la regla de `main`.
+    # Se deja sin tildes ni espacios a propósito: es un identificador, y un identificador que
+    # coincide exactamente es lo que hace que la regla funcione de verdad.
+    name: verificacion
+    runs-on: ubuntu-latest
+
+    steps:
+      # Bajar el código del repositorio a la máquina prestada.
+      - name: Bajar el código
+        uses: actions/checkout@v4
+
+      # Instalar Node.js. La versión 24 es la misma que usa el despliegue en Vercel, para que lo
+      # que pasa acá y lo que pasa allá no se separen.
+      - name: Instalar Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      # `npm ci` instala las dependencias exactas que dice `package-lock.json`, sin actualizarlas.
+      # Es la diferencia con `npm install`: acá se quiere la misma foto de siempre, no la más nueva.
+      - name: Instalar las dependencias
+        working-directory: semana6/cancha-total
+        run: npm ci
+
+      # La puerta, tal cual. El mismo archivo que se corre a mano; no hay una versión especial
+      # para GitHub. Se invoca con `bash` en vez de `./verificar.sh` para no depender de que el
+      # archivo tenga marcado el permiso de ejecución, que Windows no guarda.
+      - name: Correr la verificación
+        working-directory: semana6/cancha-total
+        run: bash verificar.sh
+
+  # -- LA QUE ÚNICAMENTE INFORMA ---------------------------------------------------------------
+  hallazgos-abiertos:
+    name: hallazgos-abiertos
+    runs-on: ubuntu-latest
+    # Esta es la línea que la vuelve informativa: pase lo que pase acá adentro, el resultado del
+    # trabajo completo no se ve afectado.
+    continue-on-error: true
+
+    steps:
+      - name: Bajar el código
+        uses: actions/checkout@v4
+
+      # Los hallazgos viven en una tabla de HALLAZGOS.md. Los cerrados llevan la palabra CERRADO o
+      # PAGADA en la fila; los que no la llevan son los que siguen abiertos.
+      - name: Listar los hallazgos que siguen sin cerrar
+        working-directory: semana6/cancha-total
+        run: |
+          echo "Hallazgos que siguen abiertos. Están anotados a propósito y NO frenan la fusión:"
+          echo
+          grep '^| \*\*H-' HALLAZGOS.md \
+            | grep -v 'CERRADO' \
+            | grep -v 'PAGADA' \
+            | sed 's/|/ /g' \
+            | sed 's/\*\*//g' \
+            | cut -c1-160
+          echo
+          echo "El detalle completo de cada uno está en semana6/cancha-total/HALLAZGOS.md."

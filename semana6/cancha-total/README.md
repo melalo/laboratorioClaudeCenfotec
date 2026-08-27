@@ -77,6 +77,30 @@ conocidos que están anotados y todavía no corregidos. No rompen la verificaci�
 que la puerta sirva desde el primer día. Cada uno está explicado en
 [`HALLAZGOS.md`](HALLAZGOS.md).
 
+## La puerta automática: qué impide la fusión y qué solo informa
+
+`verificar.sh` también corre **sola**, en una máquina limpia que GitHub presta, cada vez que se
+envía código y cada vez que se abre o se actualiza un Pull Request. Está escrita en
+[`.github/workflows/verificacion.yml`](../../.github/workflows/verificacion.yml), en la raíz del
+repositorio — GitHub solo lee los flujos de trabajo si están ahí.
+
+Corre **sin credenciales de ningún servicio**. Sin `TURSO_DATABASE_URL`, la aplicación usa el
+archivo local, que es exactamente lo que hace falta en una máquina prestada.
+
+| Revisión | ¿Frena la fusión? | Qué hace |
+|---|---|---|
+| **`verificacion`** | **Sí.** En rojo, el Pull Request no se puede fusionar a `main` | Corre `verificar.sh`: las 48 pruebas |
+| **`hallazgos-abiertos`** | **No.** Solo informa | Imprime los hallazgos que siguen sin cerrar, para que estén a la vista. Cerrarlos no es el trabajo de esta consigna, así que no traban nada |
+
+La revisión que **impide la fusión es una sola**: la verificación. Todo lo demás se ve en el
+registro de la corrida y ahí termina. La forma de decirle a GitHub «esto no frena nada» es la línea
+`continue-on-error: true` en el trabajo que solo informa.
+
+Del lado de GitHub, la rama `main` tiene la regla que hace valer todo esto: no recibe cambios
+directos —todo entra por Pull Request— y un Pull Request no se puede fusionar con la verificación
+en rojo. **La regla aplica también a quien administra el repositorio**: sin esa condición, la
+puerta no comprobaría nada.
+
 ## El reloj, para las pruebas
 
 Varias reglas del negocio dependen de la hora: la de cancelar hasta 24 horas antes del partido, y
