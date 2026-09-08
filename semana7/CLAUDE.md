@@ -54,7 +54,7 @@ no en pantallas de configuración.
 | La consigna | `semana7/consigna-semana6.txt` — **local, sin seguimiento en Git**, como el resto del material del curso |
 | La puerta local | `cancha-total/verificar.sh` (sale 0 = verde, 2 = rojo) |
 | La suite | `cancha-total/pruebas/*.test.js` — 48 pruebas, `npm test` |
-| Los hallazgos | `cancha-total/HALLAZGOS.md` — 6 marcados como fallo esperado |
+| Los hallazgos | `cancha-total/HALLAZGOS.md` — **0 marcados como fallo esperado** desde el 2026-09-08. Siguen abiertos H-11 y H-13 (estructura) y H-18 (comportamiento), ninguno con prueba propia |
 | La especificación | `cancha-total/ESPECIFICACION.md` |
 | La capa de base de datos | `cancha-total/basededatos.js` |
 | La entrada de Vercel | `cancha-total/api/index.js` + `cancha-total/vercel.json` |

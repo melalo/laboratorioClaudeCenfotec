@@ -143,15 +143,15 @@ async function contarActivasEnElBloque(cancha, fecha, hora) {
   return Number(fila.total);
 }
 
-// Cuántas reservas tiene este teléfono en este mes. `substr(fecha, 1, 7)` recorta 'AAAA-MM' de la
-// fecha, que es lo que se compara contra el mes.
+// Cuántas reservas ACTIVAS tiene este teléfono en este mes. `substr(fecha, 1, 7)` recorta 'AAAA-MM'
+// de la fecha, que es lo que se compara contra el mes.
 //
-// Ojo: cuenta **todas**, incluidas las canceladas. Eso es el hallazgo H-02, que sigue abierto: acá
-// queda tal cual, sin arreglarlo, para que su prueba lo siga delatando.
+// E-08: solo cuentan las reservas activas para el descuento de cliente frecuente. Las canceladas
+// no cuentan: frecuente es el que juega, no el que aparta.
 async function contarDelTelefonoEnElMes(telefono, mes) {
   const fila = await unaFila(
     `SELECT COUNT(*) AS total FROM reservas
-     WHERE telefono = ? AND substr(fecha, 1, 7) = ?`,
+     WHERE telefono = ? AND substr(fecha, 1, 7) = ? AND estado = 'activa'`,
     telefono,
     mes
   );
