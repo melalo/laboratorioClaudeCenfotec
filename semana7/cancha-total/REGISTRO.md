@@ -33,15 +33,20 @@ lo estaba.
    devuelve el 2 de marzo **sin dar error**. Arreglar H-06 primero habría dejado la comprobación
    midiendo contra una fecha corrida en silencio.
 
-6. **Qué detuvo al agente: nada, y ese es el hallazgo más incómodo de la semana.** La regla `ask`
-   sobre `pruebas/**` **nunca se disparó** — ni con los subagentes, ni conmigo, ni con la sesión ya
-   puesta en modo manual. Seis ediciones dentro de `pruebas/` pasaron sin que nadie preguntara.
+6. **Qué detuvo al agente: nada, y ese es el hallazgo más incómodo de la semana.** Ninguna regla
+   `ask` se disparó en toda la sesión: ni las seis ediciones dentro de `pruebas/` (cinco de los
+   subagentes y una mía), ni los tres `git push`, ni los dos `gh pr merge` — todas operaciones
+   listadas en `ask`. Ni con los subagentes, ni conmigo, ni con la sesión ya puesta en modo manual.
 
 7. **No es que el archivo de reglas no cargue: se comprobó.** La regla `deny` del mismo archivo sí
    funciona — al intentar leer `.vercel/project.json` el sistema respondió *«File is in a directory
    that is denied by your permission settings»*. Se descartaron también un `settings.local.json`
-   (no existe) y reglas globales que la anularan (no hay). Conclusión honesta: **la prohibición
-   funciona, la que pide aprobación no, y no sé por qué.** Queda anotado en vez de tapado.
+   (no existe) y reglas globales que la anularan (no hay). Queda una **hipótesis, no comprobada**:
+   la sesión arrancó en un modo que aprueba solo, y las cuatro operaciones bajo `ask` se ejecutaron
+   por primera vez en ese modo; puede que una vez concedida la aprobación, la sesión no vuelva a
+   preguntar aunque después se pase a manual. No pudo probarse, porque para entonces ya no quedaba
+   ninguna operación de la lista `ask` sin estrenar. **La prohibición funciona; la que pide
+   aprobación no llegó a pedir nada.** Se anota sin explicación firme en vez de taparse.
 
 8. **Reportó una falsedad, y es la que más importa.** El agente del Grupo A dijo que no hacía falta
    escapar el campo `fecha` *«porque esos campos ya estaban validados con una forma estricta»*. Al
