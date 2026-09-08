@@ -81,7 +81,7 @@ test('P-22 · las horas 7:00 y 22:00 se rechazan: están fuera del día de alqui
   assert.equal(await s.buscarReserva({ cancha: 1, fecha: despues, hora: 22 }), undefined);
 });
 
-test('P-23 · una fecha que no existe en el calendario se rechaza', { todo: 'H-05' }, async () => {
+test('P-23 · una fecha que no existe en el calendario se rechaza', async () => {
   // El 30 de febrero no existe ningún año: una reserva ahí queda en un día al que nadie puede
   // llegar. Falla si solo se revisa la forma de la fecha y no que el día exista, que es lo que
   // pasa hoy.

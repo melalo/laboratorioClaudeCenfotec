@@ -17,7 +17,7 @@ const s = require('./servidor-de-pruebas');
 before(s.levantarLaAplicacion);
 after(s.bajarLaAplicacion);
 
-test('P-29 · no se reserva una fecha que ya pasó', { todo: 'H-06' }, async () => {
+test('P-29 · no se reserva una fecha que ya pasó', async () => {
   // Una cancha no se alquila hacia atrás. Se usa el último bloque de hace tres días, que está en
   // el pasado a cualquier hora en que se corra la prueba. Falla si se acepta cualquier fecha con
   // la forma correcta, que es lo que hace el sistema hoy.

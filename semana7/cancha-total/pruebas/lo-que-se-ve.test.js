@@ -49,7 +49,7 @@ test('P-37 · un día sin reservas lo dice', async () => {
   assert.match(pagina, /No hay reservas/i);
 });
 
-test('P-38 · un nombre con signos de código se muestra como texto', { todo: 'H-07' }, async () => {
+test('P-38 · un nombre con signos de código se muestra como texto', async () => {
   // Lo que el cliente escribió tiene que verse tal cual, nunca ejecutarse como parte de la
   // página. Falla mientras el nombre se meta en la pantalla sin limpiarlo, que es lo que pasa
   // hoy: el navegador lo interpreta en vez de mostrarlo.

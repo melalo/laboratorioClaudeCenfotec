@@ -24,7 +24,6 @@ after(s.bajarLaAplicacion);
 
 test(
   'P-46 · no se reserva un bloque de hoy que ya pasó',
-  { todo: 'H-06' },
   async () => {
     // Son las 14:00 y alguien intenta apartar el bloque de las 10:00 de hoy. Falla mientras la
     // comprobación mire solo la fecha y no la hora, que es lo que hace hoy: acepta cualquier cosa.
@@ -37,7 +36,6 @@ test(
 
 test(
   'P-47 · no se reserva el bloque que arranca justo en este instante',
-  { todo: 'H-06' },
   async () => {
     // El borde de E-20, con su número exacto: son las 14:00 en punto y el bloque de las 14:00 ya
     // empezó. Falla si el borde se afloja y deja vender un partido que arrancó.
