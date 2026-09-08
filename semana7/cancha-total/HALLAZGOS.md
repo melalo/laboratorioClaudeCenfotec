@@ -10,11 +10,13 @@ como lo entregó el proveedor (commit `65ce4b4`).
 ## Estado de la suite
 
 ```
-48 pruebas · 47 en verde · 0 fallos · 1 marcada como fallo esperado
+48 pruebas · 48 en verde · 0 fallos · 0 marcadas como fallo esperado
 ```
 
-*Al cerrar el Grupo A del Caso Práctico 7 (H-05, H-06 y H-07) el 2026-09-08. La única marca que
-queda es la de H-02, del Grupo B.*
+*Al cerrar los dos grupos del Caso Práctico 7 el 2026-09-08: el Grupo A (H-05, H-06 y H-07, en
+`server.js`) y el Grupo B (H-02, en `basededatos.js`). **No queda ninguna marca de fallo esperado.**
+Los hallazgos que siguen abiertos —H-11 y H-13, de estructura, y H-18, de comportamiento— no tienen
+prueba propia que marcar.*
 
 Eran 40 cuando se escribió la suite. Las 8 que se sumaron son las que **no se podían escribir**
 hasta que se pagó H-14: las que dependen de la hora del reloj.
@@ -40,7 +42,7 @@ mismo antes y después.
 | # | Condición | Qué hace hoy | Prueba |
 |---|---|---|---|
 | **H-01** ✅ **CERRADO** | **E-06, E-10** · Un bloque que empieza entre las 17:00 y las 21:00 cuesta ₡20.000, porque a las 17:00 se enciende la luz | Cobraba ₡15.000 a las 17:00 y solo subía a ₡20.000 desde las 18:00. Al cliente frecuente le cobraba ₡13.500 en vez de ₡18.000. Estaba escrito en los tres lugares que calculaban la tarifa, así que el defecto aparecía tres veces | `pruebas/tarifas.test.js::P-03`, `::P-05`, `pruebas/descuento.test.js::P-14` |
-| **H-02** | **E-08** · Para el descuento solo cuentan las reservas activas; las canceladas no | El conteo del mes incluye las canceladas, así que quien aparta y cancela llega al 10% sin haber jugado | `pruebas/descuento.test.js::P-10` |
+| **H-02** ✅ **CERRADO** | **E-08** · Para el descuento solo cuentan las reservas activas; las canceladas no | El conteo del mes incluye las canceladas, así que quien aparta y cancela llega al 10% sin haber jugado | `pruebas/descuento.test.js::P-10` |
 | **H-03** ✅ **CERRADO** | **E-11** · El teléfono es obligatorio | Se podía reservar sin teléfono. Efecto de segundo orden: el conteo del descuento agrupa por teléfono, así que **todas las reservas sin teléfono se sumaban entre sí** y le regalaban el 10% a un desconocido | `pruebas/datos-de-la-reserva.test.js::P-15` |
 | **H-04** ✅ **CERRADO** | **E-12** · El teléfono son exactamente 8 dígitos | No se revisaba nada: entraba un teléfono de 3 dígitos, de 20, o con letras. El cliente dejaba de ser ubicable, que es para lo que se pide el teléfono | `pruebas/datos-de-la-reserva.test.js::P-16`, `::P-17`, `::P-18` |
 | **H-05** ✅ **CERRADO** | **E-40** · La fecha tiene que existir en el calendario | Solo se revisa la forma «cuatro dígitos, guion, dos, guion, dos». Se acepta el 30 de febrero, y la reserva queda en un día al que nadie puede llegar | `pruebas/datos-de-la-reserva.test.js::P-23` |

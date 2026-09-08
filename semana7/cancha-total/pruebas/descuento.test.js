@@ -57,7 +57,6 @@ test('P-09 · con dos reservas activas en el mes, la tercera va sin descuento', 
 
 test(
   'P-10 · una reserva cancelada no cuenta para el descuento',
-  { todo: 'H-02' },
   async () => {
     // Frecuente es el que juega, no el que aparta: con una de las tres cancelada quedan dos
     // activas, y la nueva es la tercera, no la cuarta. Falla si el conteo del mes vuelve a
