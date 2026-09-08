@@ -10,8 +10,11 @@ como lo entregó el proveedor (commit `65ce4b4`).
 ## Estado de la suite
 
 ```
-48 pruebas · 42 en verde · 0 fallos · 6 marcadas como fallo esperado
+48 pruebas · 47 en verde · 0 fallos · 1 marcada como fallo esperado
 ```
+
+*Al cerrar el Grupo A del Caso Práctico 7 (H-05, H-06 y H-07) el 2026-09-08. La única marca que
+queda es la de H-02, del Grupo B.*
 
 Eran 40 cuando se escribió la suite. Las 8 que se sumaron son las que **no se podían escribir**
 hasta que se pagó H-14: las que dependen de la hora del reloj.
@@ -40,12 +43,13 @@ mismo antes y después.
 | **H-02** | **E-08** · Para el descuento solo cuentan las reservas activas; las canceladas no | El conteo del mes incluye las canceladas, así que quien aparta y cancela llega al 10% sin haber jugado | `pruebas/descuento.test.js::P-10` |
 | **H-03** ✅ **CERRADO** | **E-11** · El teléfono es obligatorio | Se podía reservar sin teléfono. Efecto de segundo orden: el conteo del descuento agrupa por teléfono, así que **todas las reservas sin teléfono se sumaban entre sí** y le regalaban el 10% a un desconocido | `pruebas/datos-de-la-reserva.test.js::P-15` |
 | **H-04** ✅ **CERRADO** | **E-12** · El teléfono son exactamente 8 dígitos | No se revisaba nada: entraba un teléfono de 3 dígitos, de 20, o con letras. El cliente dejaba de ser ubicable, que es para lo que se pide el teléfono | `pruebas/datos-de-la-reserva.test.js::P-16`, `::P-17`, `::P-18` |
-| **H-05** | **E-40** · La fecha tiene que existir en el calendario | Solo se revisa la forma «cuatro dígitos, guion, dos, guion, dos». Se acepta el 30 de febrero, y la reserva queda en un día al que nadie puede llegar | `pruebas/datos-de-la-reserva.test.js::P-23` |
-| **H-06** | **E-19** · Solo se reserva un bloque que todavía no empezó | Se acepta cualquier fecha, incluso del año pasado | `pruebas/reservar-en-el-tiempo.test.js::P-29`, `pruebas/reservar-a-tiempo.test.js::P-46`, `::P-47` |
-| **H-07** | **E-35** · El nombre y el teléfono se muestran siempre como texto | Se insertan en la página sin limpiarlos, así que un nombre con signos de código lo ejecuta el navegador en vez de mostrarlo. En el caso leve descuadra la pantalla; en el grave, un nombre de cliente puede dejar código que corre cuando la administradora abre la lista del día | `pruebas/lo-que-se-ve.test.js::P-38` |
+| **H-05** ✅ **CERRADO** | **E-40** · La fecha tiene que existir en el calendario | Solo se revisa la forma «cuatro dígitos, guion, dos, guion, dos». Se acepta el 30 de febrero, y la reserva queda en un día al que nadie puede llegar | `pruebas/datos-de-la-reserva.test.js::P-23` |
+| **H-06** ✅ **CERRADO** | **E-19** · Solo se reserva un bloque que todavía no empezó | Se acepta cualquier fecha, incluso del año pasado | `pruebas/reservar-en-el-tiempo.test.js::P-29`, `pruebas/reservar-a-tiempo.test.js::P-46`, `::P-47` |
+| **H-07** ✅ **CERRADO** | **E-35** · El nombre y el teléfono se muestran siempre como texto | Se insertan en la página sin limpiarlos, así que un nombre con signos de código lo ejecuta el navegador en vez de mostrarlo. En el caso leve descuadra la pantalla; en el grave, un nombre de cliente puede dejar código que corre cuando la administradora abre la lista del día | `pruebas/lo-que-se-ve.test.js::P-38` |
 | **H-08** ✅ **CERRADO** | **E-33** · El precio que se muestra antes de confirmar es el que se va a cobrar | La cotización miraba solo el horario y nunca el cliente: mostraba ₡15.000 y cobraba ₡13.500 | `pruebas/lo-que-se-ve.test.js::P-39` |
 | **H-09** ✅ **CERRADO** | **E-34** · Sin el teléfono completo se avisa que falta para saber el precio | Mostraba un número pelado, que podía no ser el que se cobra, y no lo decía | `pruebas/lo-que-se-ve.test.js::P-40` |
 | **H-10** ✅ **CERRADO** | **E-21, E-22, E-23** · Se puede cancelar hasta 24 horas antes de la hora de inicio del partido, y el borde exacto es inclusive | **Comparaba solo días, sin mirar la hora**: cancelaba cualquier reserva de un día posterior a hoy. Fallaba en un solo sentido —**dejaba cancelar lo que debía cobrarse**— y el caso era el que la administradora describió: partido mañana a las 8:00, ya las 23:00 de hoy, faltan 9 horas, y lo cancelaba igual. Pasaba con cualquier partido de mañana cuya hora ya había pasado hoy. Los demás casos coincidían con la condición por casualidad: un partido de hoy está siempre a menos de 24 horas, y uno de dentro de dos días o más está siempre a más. El mensaje de rechazo hablaba de 24 horas, pero la comprobación que hacía era otra | `pruebas/cancelar-a-tiempo.test.js::P-41`, `::P-45`, `pruebas/cancelar-en-el-borde.test.js::P-43` |
+| **H-18** ⚠️ **ABIERTO — fuera del alcance del Caso Práctico 7** | *Sin condición en la especificación.* Es el mismo defecto que H-07 —texto que el navegador ejecuta en vez de mostrar— pero por otra puerta: la **fecha que viene en la dirección web**, no el nombre del cliente | La fecha se pega en la página sin limpiarla en las dos rutas de lectura: `GET /` la toma de `req.query.fecha` y `GET /dia/:fecha` de `req.params.fecha` (`server.js:480`). Ninguna de las dos valida la forma de la fecha: eso solo pasa en el formulario que **crea** la reserva. Comprobado a mano el 2026-09-08 contra la aplicación levantada: `GET /?fecha=<script>alert(1)</script>` devuelve `Disponibilidad - <script>alert(1)</script></h2>`, y `GET /dia/<b>PRUEBA` devuelve `<h2>Reservas del <b>PRUEBA</h2>`. *No salió de la suite: apareció el 2026-09-08 al revisar el cierre de H-07. El subagente que cerró H-07 lo había descartado afirmando que «esos campos ya estaban validados con una forma estricta», y al comprobarlo no era cierto. Se anota en lugar de taparse, y **no se cierra**: la consigna del Caso Práctico 7 acota el trabajo a los hallazgos ya escritos, y cerrarlo sin una prueba que lo vigile va contra la disciplina de este repositorio* | Sin prueba propia. Cerrarlo pide primero una condición nueva en `ESPECIFICACION.md` y su prueba |
 
 ## Estructura
 

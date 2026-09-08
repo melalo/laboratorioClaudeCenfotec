@@ -89,6 +89,42 @@ function telefonoEsValido(telefono) {
   return /^\d{8}$/.test(telefono || '');
 }
 
+// Si la fecha existe de verdad en el calendario, además de tener la forma correcta.
+//
+// No alcanza con la forma "cuatro dígitos-dos-dos": el 30 de febrero tiene esa forma y no existe
+// en ningún año (hallazgo H-05). Tampoco sirve preguntarle a `new Date(...)`, porque en JavaScript
+// una fecha imposible no da error: se corre sola a otro día sin avisar (por ejemplo,
+// `new Date('2027-02-30T10:00:00')` se convierte en el 2 de marzo). Por eso acá se cuentan los
+// días del mes a mano, sin pasar por `Date`.
+function fechaExisteEnElCalendario(fecha) {
+  const [anioTexto, mesTexto, diaTexto] = fecha.split('-');
+  const anio = Number(anioTexto);
+  const mes = Number(mesTexto);
+  const dia = Number(diaTexto);
+
+  if (mes < 1 || mes > 12) return false;
+
+  const esBisiesto = (anio % 4 === 0 && anio % 100 !== 0) || anio % 400 === 0;
+  const diasPorMes = [31, esBisiesto ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  return dia >= 1 && dia <= diasPorMes[mes - 1];
+}
+
+// Lo que escribe el cliente se muestra tal cual, nunca se ejecuta como parte de la página.
+//
+// Antes el nombre y el teléfono se pegaban directo en el HTML: un nombre como `<b>Tigres</b>` no
+// se veía como texto, el navegador lo interpretaba como una etiqueta de verdad (hallazgo H-07).
+// Cambiando los caracteres que arman etiquetas por su versión de texto, el navegador los vuelve a
+// mostrar como los escribió el cliente en vez de ejecutarlos.
+function escaparHtml(texto) {
+  return String(texto).replace(/[&<>"']/g, (caracter) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  }[caracter]));
+}
+
 async function precioDeLaReserva({ hora, fecha, telefono }) {
   const tarifa = tarifaDelBloque(hora);
 
@@ -335,16 +371,32 @@ app.post('/reservas', conBase(async (req, res) => {
     errores.push('La cancha debe ser 1 o 2.');
   }
 
+  // El 30 de febrero tiene la forma correcta y no existe en ningún año: se acepta una reserva a
+  // la que nadie puede llegar (hallazgo H-05).
   if (!fecha) {
     errores.push('Falta la fecha.');
   } else if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
     errores.push('El formato de la fecha es inválido.');
+  } else if (!fechaExisteEnElCalendario(fecha)) {
+    errores.push('La fecha no existe en el calendario.');
   }
 
   if (horaTexto === undefined || horaTexto === '') {
     errores.push('Falta la hora de inicio.');
   } else if (!Number.isInteger(hora) || hora < 8 || hora > 21) {
     errores.push('La hora debe ser un bloque entre las 08:00 y las 21:00.');
+  }
+
+  // Un bloque que ya empezó, o que ya pasó, no se puede reservar (hallazgo H-06). Esto solo se
+  // comprueba cuando la cancha, la fecha y la hora ya pasaron sus propias validaciones: recién ahí
+  // la fecha es un día real del calendario, así que construir la hora exacta del partido con
+  // `Date` no se corre sola a otro día en silencio (ver H-05, arriba).
+  if (errores.length === 0) {
+    const horaDeInicio = String(hora).padStart(2, '0');
+    const inicioDelBloque = new Date(`${fecha}T${horaDeInicio}:00:00`);
+    if (inicioDelBloque.getTime() <= ahora().getTime()) {
+      errores.push('Ese bloque ya empezó o ya pasó.');
+    }
   }
 
   if (!cliente) {
@@ -384,7 +436,7 @@ app.post('/reservas', conBase(async (req, res) => {
   const contenido = `
 <div class="ok">
   <p>Reserva #${id} creada.</p>
-  <p>Cancha ${cancha}, ${fecha} a las ${hora}:00, cliente ${cliente}.</p>
+  <p>Cancha ${cancha}, ${fecha} a las ${hora}:00, cliente ${escaparHtml(cliente)}.</p>
   <p>Precio: ${formatColones(precio)}${notaDescuento}</p>
 </div>
 <p><a href="/dia/${fecha}">Ver lista del día</a> | <a href="/">Volver</a></p>
@@ -433,7 +485,7 @@ app.get('/dia/:fecha', conBase(async (req, res) => {
     const botonCancelar = r.estado === 'activa'
       ? `<form method="post" action="/reservas/${r.id}/cancelar" style="display:inline"><button type="submit">Cancelar</button></form>`
       : '-';
-    return `<tr class="${claseFila}"><td>${r.hora}:00</td><td>Cancha ${r.cancha}</td><td>${r.cliente}</td><td>${r.telefono || ''}</td><td>${formatColones(r.precio)}</td><td>${r.estado}</td><td>${botonCancelar}</td></tr>`;
+    return `<tr class="${claseFila}"><td>${r.hora}:00</td><td>Cancha ${r.cancha}</td><td>${escaparHtml(r.cliente)}</td><td>${escaparHtml(r.telefono || '')}</td><td>${formatColones(r.precio)}</td><td>${r.estado}</td><td>${botonCancelar}</td></tr>`;
   }).join('');
 
   const contenido = `
