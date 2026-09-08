@@ -26,7 +26,8 @@ test(
   'P-46 · no se reserva un bloque de hoy que ya pasó',
   async () => {
     // Son las 14:00 y alguien intenta apartar el bloque de las 10:00 de hoy. Falla mientras la
-    // comprobación mire solo la fecha y no la hora, que es lo que hace hoy: acepta cualquier cosa.
+    // comprobación mire solo la fecha y no la hora. El hallazgo H-06 ya está cerrado; esta prueba
+    // queda como guardia por si el defecto vuelve.
     await s.reservar({
       cancha: 1, fecha: HOY, hora: 10, cliente: 'Llega cuatro horas tarde', telefono: '88112233',
     });

@@ -20,7 +20,8 @@ after(s.bajarLaAplicacion);
 test('P-29 · no se reserva una fecha que ya pasó', async () => {
   // Una cancha no se alquila hacia atrás. Se usa el último bloque de hace tres días, que está en
   // el pasado a cualquier hora en que se corra la prueba. Falla si se acepta cualquier fecha con
-  // la forma correcta, que es lo que hace el sistema hoy.
+  // la forma correcta. El hallazgo H-06 ya está cerrado; esta prueba queda como guardia por si
+  // el defecto vuelve.
   const fechaPasada = s.fechaEnDias(-3);
   await s.reservar({
     cancha: 1, fecha: fechaPasada, hora: 21, cliente: 'Partido de ayer', telefono: '88112233',
