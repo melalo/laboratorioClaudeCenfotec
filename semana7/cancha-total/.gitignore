@@ -1,0 +1,13 @@
+node_modules
+reservas.db
+reservas.db-wal
+reservas.db-shm
+.vercel
+.env*
+
+# Skills de referencia de Turso que baja su instalador: son material de terceros, no trabajo
+# propio. Se quedan en el disco. Ojo: solo se ignora `.claude/skills/`, NO todo `.claude/` — ahi
+# viven `settings.json` y `agents/`, que si son entregables del Caso Practico 7.
+.agents/
+.claude/skills/
+skills-lock.json

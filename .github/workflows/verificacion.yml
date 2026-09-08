@@ -12,9 +12,14 @@
 #   - `verificacion` IMPIDE la fusión. Es `verificar.sh`: las 48 pruebas. Si queda en rojo, el
 #     Pull Request no se puede fusionar a `main`. Es la única revisión obligatoria.
 #   - `hallazgos-abiertos` ÚNICAMENTE INFORMA. Imprime los hallazgos que siguen sin cerrar. Se ve
-#     en el registro de la corrida, pero no frena nada: esos hallazgos están anotados a propósito
-#     y cerrarlos no es el trabajo de esta consigna. Lleva `continue-on-error: true`, que es la
+#     en el registro de la corrida, pero no frena nada. Lleva `continue-on-error: true`, que es la
 #     manera de decirle a GitHub «si esto falla, seguí igual».
+#
+#     En el Caso Práctico 6 esta lista era solo un recordatorio: cerrar los hallazgos no era el
+#     trabajo de esa consigna. En el Caso Práctico 7 sí lo es, así que la misma lista pasa a ser
+#     el medidor de avance: cada cierre la deja más corta. Sigue sin frenar la fusión a propósito
+#     — lo que frena es `verificacion`, o sea que la suite quede en verde. Un hallazgo se cierra
+#     porque su prueba pasa, no porque alguien lo tache de la lista.
 
 name: verificación
 
@@ -53,14 +58,14 @@ jobs:
       # `npm ci` instala las dependencias exactas que dice `package-lock.json`, sin actualizarlas.
       # Es la diferencia con `npm install`: acá se quiere la misma foto de siempre, no la más nueva.
       - name: Instalar las dependencias
-        working-directory: semana6/cancha-total
+        working-directory: semana7/cancha-total
         run: npm ci
 
       # La puerta, tal cual. El mismo archivo que se corre a mano; no hay una versión especial
       # para GitHub. Se invoca con `bash` en vez de `./verificar.sh` para no depender de que el
       # archivo tenga marcado el permiso de ejecución, que Windows no guarda.
       - name: Correr la verificación
-        working-directory: semana6/cancha-total
+        working-directory: semana7/cancha-total
         run: bash verificar.sh
 
   # -- LA QUE ÚNICAMENTE INFORMA ---------------------------------------------------------------
@@ -78,7 +83,7 @@ jobs:
       # Los hallazgos viven en una tabla de HALLAZGOS.md. Los cerrados llevan la palabra CERRADO o
       # PAGADA en la fila; los que no la llevan son los que siguen abiertos.
       - name: Listar los hallazgos que siguen sin cerrar
-        working-directory: semana6/cancha-total
+        working-directory: semana7/cancha-total
         run: |
           echo "Hallazgos que siguen abiertos. Están anotados a propósito y NO frenan la fusión:"
           echo
@@ -89,4 +94,4 @@ jobs:
             | sed 's/\*\*//g' \
             | cut -c1-160
           echo
-          echo "El detalle completo de cada uno está en semana6/cancha-total/HALLAZGOS.md."
+          echo "El detalle completo de cada uno está en semana7/cancha-total/HALLAZGOS.md."
