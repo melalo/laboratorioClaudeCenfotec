@@ -83,8 +83,12 @@ test('P-22 · las horas 7:00 y 22:00 se rechazan: están fuera del día de alqui
 
 test('P-23 · una fecha que no existe en el calendario se rechaza', async () => {
   // El 30 de febrero no existe ningún año: una reserva ahí queda en un día al que nadie puede
-  // llegar. Falla si solo se revisa la forma de la fecha y no que el día exista, que es lo que
-  // pasa hoy.
+  // llegar. Falla si solo se revisa la forma de la fecha y no que el día exista. El hallazgo
+  // H-05 ya está cerrado; esta prueba queda como guardia por si el defecto vuelve.
+  //
+  // Ojo si alguna vez se «simplifica» la validación usando `Date`: en JavaScript una fecha
+  // imposible no da error, se corre sola a otro día sin avisar. `new Date('2027-02-30')` devuelve
+  // el 2 de marzo. Por eso `server.js` cuenta los días del mes a mano.
   const imposible = `${new Date().getFullYear() + 1}-02-30`;
   await s.reservar({
     cancha: 1, fecha: imposible, hora: 10, cliente: 'Fecha imposible', telefono: '88112233',

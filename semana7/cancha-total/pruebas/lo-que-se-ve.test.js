@@ -51,8 +51,9 @@ test('P-37 · un día sin reservas lo dice', async () => {
 
 test('P-38 · un nombre con signos de código se muestra como texto', async () => {
   // Lo que el cliente escribió tiene que verse tal cual, nunca ejecutarse como parte de la
-  // página. Falla mientras el nombre se meta en la pantalla sin limpiarlo, que es lo que pasa
-  // hoy: el navegador lo interpreta en vez de mostrarlo.
+  // página. Falla mientras el nombre se meta en la pantalla sin limpiarlo, que haría que el
+  // navegador lo interprete en vez de mostrarlo. El hallazgo H-07 ya está cerrado; esta prueba
+  // queda como guardia por si el defecto vuelve.
   const fecha = s.fechaEnDias(73);
   await s.reservar({
     cancha: 1, fecha, hora: 13, cliente: 'Los <b>Tigres</b>', telefono: '88112233',

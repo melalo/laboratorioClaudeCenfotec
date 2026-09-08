@@ -60,7 +60,8 @@ test(
   async () => {
     // Frecuente es el que juega, no el que aparta: con una de las tres cancelada quedan dos
     // activas, y la nueva es la tercera, no la cuarta. Falla si el conteo del mes vuelve a
-    // incluir las canceladas, que es lo que hace el sistema hoy.
+    // incluir las canceladas. El hallazgo H-02 ya está cerrado; esta prueba queda como guardia
+    // por si el defecto vuelve.
     const mes = s.mesEnMeses(2);
     const telefono = '80000010';
     const numeros = await prepararReservas(3, {
